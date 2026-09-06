@@ -55,7 +55,7 @@ export function SocialProof() {
       <div className="container-k">
         <SectionHeading
           split
-          index="07"
+          index="08"
           eyebrow="Social Proof"
           title="آنچه کاربران می‌گویند"
           lead="بازخوردهای واقعی از کسانی که تجربه شنیدن‌شان با کتاپاد تغییر کرده است."

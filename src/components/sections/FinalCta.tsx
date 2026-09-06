@@ -35,7 +35,7 @@ export function FinalCta() {
       <div className="grid items-center gap-10 md:grid-cols-[1.25fr_0.75fr]">
         <div>
           <SectionHeading
-            index="10"
+            index="11"
             eyebrow="Start Listening"
             title={FINAL_CTA.title}
             lead={FINAL_CTA.subtitle}

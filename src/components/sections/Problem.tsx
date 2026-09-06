@@ -16,7 +16,7 @@ export function Problem() {
   return (
     <Section id="problem" shell="night">
       <SectionHeading
-        index="02"
+        index="03"
         eyebrow="The Problem"
         title="مشکل کجاست؟"
         lead="شش شکافی که تجربه فعلی کتاب صوتی را برای شنونده امروزی ناکافی می‌کند."
