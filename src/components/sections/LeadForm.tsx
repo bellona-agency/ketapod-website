@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Check, ChevronDown, Loader2, PartyPopper, TriangleAlert } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AssetSlot, Float } from "@/components/primitives/AssetSlot";
 import { asset } from "@/lib/assets";
 import { SectionHeading } from "@/components/primitives/SectionHeading";
@@ -16,7 +16,7 @@ import {
   type LeadOptions,
 } from "@/lib/api";
 import { LEAD_FORM_COPY } from "@/lib/content";
-import { onLeadIntent } from "@/lib/leadIntent";
+import { onLeadIntent, type LeadIntent } from "@/lib/leadIntent";
 import { EASE_OUT_EXPO, springSoft } from "@/lib/motion";
 import { cn, toLatinDigits } from "@/lib/utils";
 
@@ -65,23 +65,29 @@ export function LeadForm() {
     return () => ac.abort();
   }, []);
 
-  /* Preset from the Kids CTA: user type + a first interest if none chosen. */
-  useEffect(
-    () =>
-      onLeadIntent((intent) => {
-        setForm((f) => ({
-          ...f,
-          userType: intent.userType ?? f.userType,
-          interestTags:
-            intent.interest && f.interestTags.length === 0
-              ? [intent.interest]
-              : f.interestTags,
-        }));
-        setPhase("idle");
-        window.setTimeout(() => nameRef.current?.focus({ preventScroll: true }), 650);
-      }),
-    [],
-  );
+  /**
+   * Apply a preset: user type, plus a first interest if none is chosen.
+   *
+   * Shared by the two ways an intent can reach this form — a CTA on the same
+   * page broadcasting it, and a CTA on another page having put it in the URL.
+   * Both must land the reader in the same state, so both go through here.
+   */
+  const applyIntent = useCallback((intent: LeadIntent) => {
+    setForm((f) => ({
+      ...f,
+      userType: intent.userType ?? f.userType,
+      interestTags:
+        intent.interest && f.interestTags.length === 0 ? [intent.interest] : f.interestTags,
+    }));
+    setPhase("idle");
+    window.setTimeout(() => nameRef.current?.focus({ preventScroll: true }), 650);
+  }, []);
+
+  /* The only way an intent reaches this form. Same-page CTAs broadcast into the
+     channel directly; cross-page CTAs put the intent in the URL and
+     `LeadIntentFromUrl` broadcasts it on arrival. Either way the state change
+     happens in this subscription callback rather than in an effect body. */
+  useEffect(() => onLeadIntent(applyIntent), [applyIntent]);
 
   /** Fires once, on the first real interaction. */
   function markStarted(field: string) {
@@ -218,7 +224,7 @@ export function LeadForm() {
 
             <div className="relative">
               <SectionHeading
-                index="09"
+                index="10"
                 eyebrow="Get Started"
                 title={LEAD_FORM_COPY.title}
                 lead={LEAD_FORM_COPY.subtitle}
