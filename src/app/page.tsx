@@ -1,15 +1,24 @@
 import dynamic from "next/dynamic";
-import { PageBackdrop } from "@/components/primitives/PageBackdrop";
+import type { Metadata } from "next";
 import { PageView } from "@/components/primitives/PageView";
 import { Faq } from "@/components/sections/Faq";
 import { Features } from "@/components/sections/Features";
 import { FinalCta } from "@/components/sections/FinalCta";
-import { Footer } from "@/components/sections/Footer";
-import { Header } from "@/components/sections/Header";
 import { Hero } from "@/components/sections/Hero";
+import { HomeCatalog } from "@/components/sections/HomeCatalog";
 import { Kids } from "@/components/sections/Kids";
+import { LeadIntentFromUrl } from "@/components/sections/LeadIntentFromUrl";
 import { Problem } from "@/components/sections/Problem";
 import { WhyUs } from "@/components/sections/WhyUs";
+import { routes } from "@/lib/routes";
+import { pageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = pageMetadata({
+  title: "کتاپاد | کتاب صوتی هوشمند، متناسب با هر شنونده",
+  description:
+    "کتاب صوتی فارسی با انتخاب گوینده، نسخه‌های گویشی، ترنسکریپت همگام و تجربه‌ای مستقل و امن برای کودک.",
+  path: routes.home(),
+});
 
 /*
  * These four are the only sections left that still need an animation library,
@@ -37,15 +46,24 @@ const LeadForm = dynamic(() =>
   import("@/components/sections/LeadForm").then((m) => m.LeadForm),
 );
 
+/**
+ * The home page.
+ *
+ * Still the pitch, and still the only page with the lead form on it — every CTA
+ * anywhere on the site ends here. What changed is that it is no longer the whole
+ * site: the header, footer and backdrop moved to the layout, and `HomeCatalog`
+ * now links out to the catalogue, the dialect pages and the narrators rather
+ * than describing them.
+ */
 export default function HomePage() {
   return (
     <>
-      <PageBackdrop />
-      <PageView />
-      <Header />
+      <PageView name="home" />
+      <LeadIntentFromUrl />
       <main>
         <Hero />
         <WhyUs />
+        <HomeCatalog />
         <Problem />
         <Features />
         <InteractiveDemo />
@@ -56,7 +74,6 @@ export default function HomePage() {
         <LeadForm />
         <FinalCta />
       </main>
-      <Footer />
     </>
   );
 }

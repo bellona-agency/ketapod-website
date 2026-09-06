@@ -101,7 +101,7 @@ export function InteractiveDemo() {
             {/* ── Header row ─────────────────────────────────────── */}
             <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
               <SectionHeading
-                index="04"
+                index="05"
                 eyebrow="Interactive Demo"
                 title="محصول را همین‌جا گوش کن"
                 lead="پخش واقعی، انتخاب گوینده و پیشنهادهای هوشمند — بدون نصب و بدون ثبت‌نام."

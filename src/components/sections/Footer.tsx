@@ -1,11 +1,11 @@
-"use client";
-
 import { Mail, Phone } from "lucide-react";
+import Link from "next/link";
+import type { ReactNode } from "react";
 import { BrandMark, BrandWord } from "@/components/primitives/BrandMark";
 import { Reveal } from "@/components/primitives/Reveal";
-import { FOOTER, NAV_ITEMS } from "@/lib/content";
-import { openLeadForm } from "@/lib/leadIntent";
-import { scrollToSection } from "@/lib/utils";
+import { CATEGORIES, DIALECTS } from "@/lib/catalog";
+import { FOOTER } from "@/lib/content";
+import { LEAD_HREF, routes } from "@/lib/routes";
 
 /* Lucide dropped its brand glyphs, so these two are drawn here. */
 const SOCIAL_PATHS: Record<string, string> = {
@@ -15,13 +15,18 @@ const SOCIAL_PATHS: Record<string, string> = {
     "M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM3 9h4v12H3V9Zm7 0h3.8v1.65h.05A4.17 4.17 0 0 1 17.6 8.7c4 0 4.75 2.5 4.75 5.8V21h-4v-5.7c0-1.36-.03-3.1-1.9-3.1s-2.2 1.47-2.2 3v5.8h-4V9Z",
 };
 
-/** Section 14 — Footer. */
+/**
+ * Site footer.
+ *
+ * On a one-page site this was three scroll targets. On an SEO-first catalogue it
+ * is load-bearing: the footer is the only place every category and every dialect
+ * page is linked from every page on the site, which is how a new catalogue with
+ * no external authority gets its deep pages crawled at all.
+ *
+ * It is a server component now — nothing here holds state, and the links are
+ * real anchors.
+ */
 export function Footer() {
-  function go(target: string) {
-    if (target === "lead-form") openLeadForm();
-    else scrollToSection(target);
-  }
-
   return (
     <footer className="relative overflow-hidden bg-night pt-16 text-night-ink">
       <div aria-hidden className="pointer-events-none absolute inset-0">
@@ -29,11 +34,11 @@ export function Footer() {
       </div>
 
       <div className="container-k relative">
-        <div className="grid gap-12 pb-14 md:grid-cols-[1.3fr_1fr_1fr_1.1fr]">
+        <div className="grid gap-12 pb-14 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1.1fr]">
           {/* Brand */}
           <div>
             <BrandMark tone="night" animated={false} size={40} />
-            <p className="mt-5 max-w-[34ch] text-[16px] leading-[1.75] sm:leading-[2] text-night-muted">
+            <p className="mt-5 max-w-[34ch] text-[16px] leading-[1.75] text-night-muted sm:leading-[2]">
               {FOOTER.brandDescription}
             </p>
 
@@ -55,32 +60,46 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Sections */}
-          <FooterColumn title="بخش‌ها">
-            {NAV_ITEMS.slice(0, 5).map((l) => (
-              <FooterLink key={l.target} onClick={() => go(l.target)}>
-                {l.label}
+          <FooterColumn title="کشف">
+            <FooterLink href={routes.books()}>همه کتاب‌ها</FooterLink>
+            <FooterLink href={routes.voices()}>گویندگان</FooterLink>
+            <FooterLink href={routes.dialects()}>گویش‌ها و زبان‌ها</FooterLink>
+            <FooterLink href={routes.collection("sad-sal-dastan-farsi")}>
+              صد سال داستان فارسی
+            </FooterLink>
+            <FooterLink href={routes.collection("gheseh-shab")}>قصه شب</FooterLink>
+          </FooterColumn>
+
+          {/* Every category, from every page — the cheapest indexable pages in
+              the project, per the spec, and worth nothing unlinked. */}
+          <FooterColumn title="دسته‌ها">
+            {CATEGORIES.map((c) => (
+              <FooterLink key={c.slug} href={routes.category(c.slug)}>
+                {c.title}
               </FooterLink>
             ))}
           </FooterColumn>
 
-          <FooterColumn title="قوانین">
-            {FOOTER.legalLinks.map((l) => (
-              <li key={l.url}>
-                <a
-                  href={l.url}
-                  className="text-[16px] text-night-muted transition-colors duration-200 hover:text-white"
-                >
-                  {l.label}
-                </a>
-              </li>
+          <FooterColumn title="زبان‌ها">
+            {DIALECTS.map((d) => (
+              <FooterLink key={d.slug} href={routes.dialect(d.slug)}>
+                {d.title}
+              </FooterLink>
             ))}
-            <FooterLink onClick={() => go("lead-form")}>همکاری با کتاپاد</FooterLink>
           </FooterColumn>
 
-          {/* Contact */}
-          <FooterColumn title="تماس">
-            <li>
+          <FooterColumn title="کتاپاد">
+            <FooterLink href={routes.ai()}>کتاب‌یار</FooterLink>
+            <FooterLink href={routes.kids()}>کتاپاد کودک</FooterLink>
+            <FooterLink href={routes.blog()}>بلاگ</FooterLink>
+            {FOOTER.legalLinks.map((l) => (
+              <FooterLink key={l.url} href={l.url}>
+                {l.label}
+              </FooterLink>
+            ))}
+            <FooterLink href={LEAD_HREF}>همکاری با کتاپاد</FooterLink>
+
+            <li className="pt-2">
               <a
                 href={`mailto:${FOOTER.contact.email}`}
                 className="flex items-center gap-2.5 text-[16px] text-night-muted transition-colors duration-200 hover:text-white"
@@ -110,23 +129,17 @@ export function Footer() {
         </Reveal>
 
         <div className="flex flex-col items-center justify-between gap-3 border-t border-night-line py-6 sm:flex-row">
+          <p className="text-[15px] text-night-muted">{FOOTER.copyright}</p>
           <p className="text-[15px] text-night-muted">
-            {FOOTER.copyright}
+            ساخته‌شده برای شنیدن، نه فقط شنیده‌شدن.
           </p>
-          <p className="text-[15px] text-night-muted">ساخته‌شده برای شنیدن، نه فقط شنیده‌شدن.</p>
         </div>
       </div>
     </footer>
   );
 }
 
-function FooterColumn({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function FooterColumn({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div>
       <h3 className="eyebrow text-white/45">{title}</h3>
@@ -135,22 +148,15 @@ function FooterColumn({
   );
 }
 
-function FooterLink({
-  onClick,
-  children,
-}: {
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
+function FooterLink({ href, children }: { href: string; children: ReactNode }) {
   return (
     <li>
-      <button
-        type="button"
-        onClick={onClick}
-        className="cursor-pointer text-[16px] text-night-muted transition-colors duration-200 hover:text-white"
+      <Link
+        href={href}
+        className="text-[16px] text-night-muted transition-colors duration-200 hover:text-white"
       >
         {children}
-      </button>
+      </Link>
     </li>
   );
 }

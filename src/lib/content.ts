@@ -6,23 +6,14 @@
  * Social Proof and the Lead-Form options are dynamic — those live in `api.ts`.
  */
 
+import { routes } from "./routes";
+
 export const PRIMARY_CTA_LABEL = "رایگان گوش کن";
 
-/* ── 1) Header ───────────────────────────────────────────────────────────── */
-
-export const NAV_ITEMS = [
-  { label: "امکانات", target: "features" },
-  { label: "دمو محصول", target: "demo" },
-  { label: "کودک", target: "kids" },
-  { label: "زبان‌ها و فرهنگ‌ها", target: "localization" },
-  { label: "سوالات متداول", target: "faq" },
-  { label: "شروع", target: "lead-form" },
-] as const;
-
-export const HEADER_CTA = {
-  label: PRIMARY_CTA_LABEL,
-  target: "lead-form",
-} as const;
+/* ── 1) Header ────────────────────────────────────────────────────────────
+   The primary nav moved to `lib/routes.ts` when the site stopped being one
+   page: it is a list of URLs now, and it belongs next to the route builders
+   that produce them rather than next to the marketing copy. */
 
 /* ── 2) Hero ─────────────────────────────────────────────────────────────── */
 
@@ -297,14 +288,12 @@ export const FINAL_CTA = {
 export const FOOTER = {
   brandDescription:
     "پلتفرم هوشمند کتاب صوتی برای تجربه‌ای شخصی‌تر، تعاملی‌تر و نزدیک‌تر به مخاطب.",
-  navLinks: [
-    { label: "امکانات", target: "features" },
-    { label: "کودک", target: "kids" },
-    { label: "سوالات متداول", target: "faq" },
-  ],
+  /* Paths come from `lib/routes.ts` so these cannot drift from the pages that
+     serve them — which is exactly what had happened: both were 404s linked
+     from the footer of all 58 pages. */
   legalLinks: [
-    { label: "حریم خصوصی", url: "/privacy" },
-    { label: "قوانین و شرایط", url: "/terms" },
+    { label: "حریم خصوصی", url: routes.privacy() },
+    { label: "قوانین و شرایط", url: routes.terms() },
   ],
   contact: {
     email: "hello@ketapod.ir",

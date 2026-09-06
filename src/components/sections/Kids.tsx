@@ -26,7 +26,7 @@ export function Kids() {
       <div className="grid items-center gap-12 lg:grid-cols-[1fr_0.85fr]">
         {/* ── Copy ─────────────────────────────────────────────── */}
         <div>
-          <SectionHeading index="05" eyebrow="Kids Experience" title={KIDS.title} lead={KIDS.subtitle} />
+          <SectionHeading index="06" eyebrow="Kids Experience" title={KIDS.title} lead={KIDS.subtitle} />
 
           <RevealGroup
             className="mt-7 grid sm:mt-10 gap-x-8 gap-y-7 sm:grid-cols-2"

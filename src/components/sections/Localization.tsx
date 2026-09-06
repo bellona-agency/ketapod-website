@@ -47,7 +47,7 @@ export function Localization() {
         <div className="grid items-start gap-14 lg:grid-cols-[1fr_0.9fr] lg:gap-10">
           {/* ── Copy + controls ────────────────────────────────── */}
           <div>
-            <SectionHeading index="06" eyebrow="Localization" title={data.title} lead={data.subtitle} />
+            <SectionHeading index="07" eyebrow="Localization" title={data.title} lead={data.subtitle} />
 
             {/* language chips */}
             <RevealGroup className="mt-9 flex flex-wrap gap-2" stagger={0.05} amount={0.3}>

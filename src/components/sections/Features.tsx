@@ -24,7 +24,7 @@ export function Features() {
 
       <SectionHeading
         split
-        index="03"
+        index="04"
         eyebrow="Features"
         title="چه چیزی داخل کتاپاد است؟"
         lead="از انتخاب گوینده تا کتابخانه شخصی — امکاناتی که تجربه شنیدن را شخصی و پیوسته نگه می‌دارند."

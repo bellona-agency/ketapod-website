@@ -56,7 +56,7 @@ export function Faq() {
 
       <SectionHeading
         split
-        index="08"
+        index="09"
         eyebrow="FAQ"
         title="سوالات متداول"
         lead="اگر جواب سوالت اینجا نبود، فرم پایین را پر کن تا برایت توضیح بدهیم."
