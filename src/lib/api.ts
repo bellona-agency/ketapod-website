@@ -416,7 +416,11 @@ export function trackEvent(
   if (typeof window === "undefined") return;
   const payload = {
     eventName,
-    page: "home",
+    /* The real path. This was the literal "home" back when there was only one
+       page; left alone, every event fired from a book, kids or dialect page
+       would report itself as a home-page event and the funnel would show all
+       traffic converting from `/`. */
+    page: window.location.pathname,
     section,
     element,
     metadata,

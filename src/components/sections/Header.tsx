@@ -2,41 +2,37 @@
 
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/react";
 import { Menu, X } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BrandIcon, BrandMark } from "@/components/primitives/BrandMark";
 import { Cta } from "@/components/primitives/Cta";
-import { HEADER_CTA, NAV_ITEMS } from "@/lib/content";
+import { PRIMARY_CTA_LABEL } from "@/lib/content";
 import { trackEvent } from "@/lib/api";
-import { openLeadForm } from "@/lib/leadIntent";
+import { isActivePath, LEAD_HREF, NAV_LINKS, routes } from "@/lib/routes";
 import { EASE_OUT_EXPO, springSoft } from "@/lib/motion";
-import { cn, scrollToSection } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
+/**
+ * Site header.
+ *
+ * This used to be a scroll-spy over the sections of a single page. Now that the
+ * public surface is a set of routes, the active item comes from the pathname
+ * instead — and every item is a real `<Link>`, because the nav is the primary
+ * internal-linking structure of an SEO-first site and a crawler cannot press a
+ * button.
+ *
+ * The chrome itself is unchanged: the same pill that gains a background past
+ * 24px of scroll, the same drawer, the same shared `layoutId` pill behind the
+ * active item.
+ */
 export function Header() {
   const { scrollY } = useScroll();
+  const pathname = usePathname();
   const [condensed, setCondensed] = useState(false);
   const [open, setOpen] = useState(false);
-  const [active, setActive] = useState<string>("");
 
   useMotionValueEvent(scrollY, "change", (v) => setCondensed(v > 24));
-
-  /* Scroll-spy: highlights the section the reader is actually in. */
-  useEffect(() => {
-    const ids = NAV_ITEMS.map((i) => i.target);
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (visible) setActive(visible.target.id);
-      },
-      { rootMargin: "-45% 0px -50% 0px", threshold: [0, 0.25, 0.5] },
-    );
-    ids.forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
-    });
-    return () => observer.disconnect();
-  }, []);
 
   /* Lock the page while the drawer owns the screen. */
   useEffect(() => {
@@ -46,11 +42,10 @@ export function Header() {
     };
   }, [open]);
 
-  function go(target: string) {
-    setOpen(false);
-    if (target === "lead-form") openLeadForm();
-    else scrollToSection(target);
-  }
+  /* The drawer closes on the click that navigates, not in an effect watching
+     the pathname. Same result, but it is the interaction that closes it rather
+     than a render pass reacting to its own consequence. */
+  const closeDrawer = () => setOpen(false);
 
   return (
     <>
@@ -70,41 +65,30 @@ export function Header() {
           animate={{ paddingInline: condensed ? 12 : 8 }}
           transition={springSoft}
         >
-          {/* Brand */}
-          <button
-            type="button"
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            className="flex shrink-0 cursor-pointer items-center rounded-full py-1 pr-1"
-            aria-label="کتاپاد — رفتن به بالای صفحه"
+          {/* Brand — now the site's home link rather than a scroll-to-top. */}
+          <Link
+            href={routes.home()}
+            className="flex shrink-0 items-center rounded-full py-1 pr-1"
+            aria-label="کتاپاد — صفحه اصلی"
           >
-            {/*
-              Mark only up here. Without the wordmark beside it the icon has to
-              hold the brand by itself, so it is set well above the 34px lockup
-              size — at the old size it read as a stray glyph next to the nav.
-
-              The vertical padding comes down as the mark goes up, because the
-              brand is the tallest thing in the bar and therefore sets the pill's
-              height: at `py-1.5` a 58px mark would have made the whole header
-              8px taller rather than 2px.
-            */}
             <BrandIcon className="size-[52px] sm:size-[58px]" />
-          </button>
+          </Link>
 
           {/* Desktop nav */}
           <nav className="mr-2 hidden flex-1 items-center xl:flex" aria-label="ناوبری اصلی">
-            {NAV_ITEMS.map((item) => {
-              const isActive = active === item.target;
+            {NAV_LINKS.map((item) => {
+              const active = isActivePath(item.href, pathname);
               return (
-                <button
-                  key={item.target}
-                  type="button"
-                  onClick={() => go(item.target)}
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
-                    "relative cursor-pointer rounded-full px-3.5 py-2 text-[17px] font-medium transition-colors duration-200",
-                    isActive ? "text-ink" : "text-muted hover:text-ink",
+                    "relative rounded-full px-3.5 py-2 text-[17px] font-medium transition-colors duration-200",
+                    active ? "text-ink" : "text-muted hover:text-ink",
                   )}
                 >
-                  {isActive && (
+                  {active && (
                     <motion.span
                       layoutId="nav-pill"
                       className="absolute inset-0 -z-10 rounded-full bg-violet-50 ring-1 ring-violet-100"
@@ -112,7 +96,7 @@ export function Header() {
                     />
                   )}
                   {item.label}
-                </button>
+                </Link>
               );
             })}
           </nav>
@@ -120,8 +104,8 @@ export function Header() {
           <div className="flex flex-1 items-center justify-end gap-2 xl:flex-none">
             <div className="hidden sm:block">
               <Cta
-                label={HEADER_CTA.label}
-                target={HEADER_CTA.target}
+                label={PRIMARY_CTA_LABEL}
+                href={LEAD_HREF}
                 event="header_cta_clicked"
                 section="header"
                 element="header_cta"
@@ -181,41 +165,48 @@ export function Header() {
 
               <motion.nav
                 className="flex flex-1 flex-col gap-1 overflow-y-auto p-4"
-                variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05, delayChildren: 0.12 } } }}
+                variants={{
+                  hidden: {},
+                  show: { transition: { staggerChildren: 0.05, delayChildren: 0.12 } },
+                }}
                 aria-label="ناوبری موبایل"
               >
-                {NAV_ITEMS.map((item, i) => (
-                  <motion.button
-                    key={item.target}
-                    type="button"
-                    onClick={() => go(item.target)}
-                    className="flex cursor-pointer items-center gap-3 rounded-md px-3 py-3.5 text-right text-[18px] font-medium text-ink transition-colors hover:bg-paper-2"
-                    variants={{
-                      hidden: { opacity: 0, x: 24 },
-                      show: { opacity: 1, x: 0 },
-                    }}
+                {NAV_LINKS.map((item, i) => (
+                  <motion.div
+                    key={item.href}
+                    variants={{ hidden: { opacity: 0, x: 24 }, show: { opacity: 1, x: 0 } }}
                   >
-                    <span className="tnum text-[13px] text-faint">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                    {item.label}
-                  </motion.button>
+                    <Link
+                      href={item.href}
+                      onClick={closeDrawer}
+                      aria-current={isActivePath(item.href, pathname) ? "page" : undefined}
+                      className={cn(
+                        "flex items-center gap-3 rounded-md px-3 py-3.5 text-right text-[18px] font-medium transition-colors hover:bg-paper-2",
+                        isActivePath(item.href, pathname) ? "bg-violet-50 text-violet" : "text-ink",
+                      )}
+                    >
+                      <span className="tnum text-[13px] text-faint">
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                      {item.label}
+                    </Link>
+                  </motion.div>
                 ))}
               </motion.nav>
 
               <div className="border-t border-line p-4">
-                <button
-                  type="button"
+                <Link
+                  href={LEAD_HREF}
                   onClick={() => {
                     trackEvent("header_cta_clicked", "header", "drawer_cta", {
-                      target: HEADER_CTA.target,
+                      target: LEAD_HREF,
                     });
-                    go(HEADER_CTA.target);
+                    closeDrawer();
                   }}
                   className="btn btn-primary w-full"
                 >
-                  {HEADER_CTA.label}
-                </button>
+                  {PRIMARY_CTA_LABEL}
+                </Link>
               </div>
             </motion.div>
           </motion.div>
