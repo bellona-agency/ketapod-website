@@ -641,6 +641,41 @@
 }
 
 /* =========================================================================
+   Mobile drawer — the nav items arrive one after another
+   -------------------------------------------------------------------------
+   Same reasoning as the reveals above, and it matters more here than
+   anywhere else on the page: this runs at the exact moment the drawer is
+   sliding and the scrim is fading, so six JavaScript-driven animations were
+   competing with the two that actually carry the interaction.
+
+   A keyframe rather than a transition because the items mount already open —
+   there is no previous state to transition from, so a transition would need a
+   state flip a frame after mount to fire at all.
+   ========================================================================= */
+
+@keyframes kp-drawer-item {
+  from {
+    opacity: 0;
+    /* RTL: the items come in from the edge the drawer opens from. */
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.kp-drawer-item {
+  animation: kp-drawer-item 0.42s var(--ease-out-expo) var(--kp-delay, 0s) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kp-drawer-item {
+    animation: none;
+  }
+}
+
+/* =========================================================================
    Hero mockup — arrives once, then sits still
    ========================================================================= */
 

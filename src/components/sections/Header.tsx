@@ -4,7 +4,7 @@ import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { BrandIcon, BrandMark } from "@/components/primitives/BrandMark";
 import { Cta } from "@/components/primitives/Cta";
 import { PRIMARY_CTA_LABEL } from "@/lib/content";
@@ -59,8 +59,13 @@ export function Header() {
           className={cn(
             "mx-auto flex max-w-[1216px] items-center gap-3 rounded-full transition-[background-color,box-shadow,border-color] duration-400",
             condensed
-              ? "border border-line bg-card/85 shadow-e3 backdrop-blur-xl"
+              ? "border border-line bg-card/85 shadow-e3"
               : "border border-transparent bg-transparent",
+            /* The pill's blur is dropped while the drawer is open. The header
+               sits under a full-screen scrim then, so the blur is doing work
+               nobody can see — and it is the layer the scrim would otherwise
+               have to composite through. */
+            condensed && !open && "backdrop-blur-xl",
           )}
           animate={{ paddingInline: condensed ? 12 : 8 }}
           transition={springSoft}
@@ -138,11 +143,29 @@ export function Header() {
             animate="show"
             exit="hidden"
           >
+            {/*
+              A flat scrim, not a blurred one.
+
+              This used to be `bg-ink/35 backdrop-blur-sm`, and that pairing is
+              what made opening the menu stutter on a phone. `backdrop-filter`
+              makes the browser snapshot everything painted underneath, blur it
+              and composite it — and because the element's own opacity was
+              animating at the same time, it redid that work every frame rather
+              than once. Underneath is not cheap either: `PageBackdrop` is a
+              fixed full-viewport stack of two large radial gradients, a tiled
+              SVG-noise grain layer and a masked column grid, and the condensed
+              header sitting inside the blurred region carries a
+              `backdrop-blur-xl` of its own — a backdrop filter nested inside
+              another one, which is the worst case for it.
+
+              The opacity is raised from 35% to 45% to keep the same separation
+              from the page behind it. Nothing else about how it reads changes.
+            */}
             <motion.button
               type="button"
               aria-label="بستن منو"
               onClick={() => setOpen(false)}
-              className="absolute inset-0 cursor-pointer bg-ink/35 backdrop-blur-sm"
+              className="absolute inset-0 cursor-pointer bg-ink/45"
               variants={{ hidden: { opacity: 0 }, show: { opacity: 1 } }}
               transition={{ duration: 0.25 }}
             />
@@ -163,36 +186,33 @@ export function Header() {
                 </button>
               </div>
 
-              <motion.nav
+              {/* The stagger is a CSS keyframe with a per-item delay rather
+                  than six motion instances — see `.kp-drawer-item`. It runs
+                  while the panel is still sliding, so it is the one place on
+                  this page where the difference is felt rather than measured. */}
+              <nav
                 className="flex flex-1 flex-col gap-1 overflow-y-auto p-4"
-                variants={{
-                  hidden: {},
-                  show: { transition: { staggerChildren: 0.05, delayChildren: 0.12 } },
-                }}
                 aria-label="ناوبری موبایل"
               >
                 {NAV_LINKS.map((item, i) => (
-                  <motion.div
+                  <Link
                     key={item.href}
-                    variants={{ hidden: { opacity: 0, x: 24 }, show: { opacity: 1, x: 0 } }}
+                    href={item.href}
+                    onClick={closeDrawer}
+                    aria-current={isActivePath(item.href, pathname) ? "page" : undefined}
+                    className={cn(
+                      "kp-drawer-item flex items-center gap-3 rounded-md px-3 py-3.5 text-right text-[18px] font-medium transition-colors hover:bg-paper-2",
+                      isActivePath(item.href, pathname) ? "bg-violet-50 text-violet" : "text-ink",
+                    )}
+                    style={{ "--kp-delay": `${(0.12 + i * 0.05).toFixed(2)}s` } as CSSProperties}
                   >
-                    <Link
-                      href={item.href}
-                      onClick={closeDrawer}
-                      aria-current={isActivePath(item.href, pathname) ? "page" : undefined}
-                      className={cn(
-                        "flex items-center gap-3 rounded-md px-3 py-3.5 text-right text-[18px] font-medium transition-colors hover:bg-paper-2",
-                        isActivePath(item.href, pathname) ? "bg-violet-50 text-violet" : "text-ink",
-                      )}
-                    >
-                      <span className="tnum text-[13px] text-faint">
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-                      {item.label}
-                    </Link>
-                  </motion.div>
+                    <span className="tnum text-[13px] text-faint">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    {item.label}
+                  </Link>
                 ))}
-              </motion.nav>
+              </nav>
 
               <div className="border-t border-line p-4">
                 <Link
