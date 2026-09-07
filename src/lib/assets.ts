@@ -36,6 +36,23 @@ export const ASSETS = {
   "whyUs.interactive": "/assets/tile-chat.webp",
   "whyUs.kids": "/assets/tile-kid.webp",
   "whyUs.localization": "/assets/tile-globe.webp",
+
+  /**
+   * The کتاب‌یار capability cards on `/ai`. Keyed by the card id in the page's
+   * `CAPABILITIES` list. Display ~96px.
+   *
+   * These came out of a render of the whole section rather than a gallery
+   * sheet, so `scripts/extract-assistant-assets.py` cuts them from the card
+   * grid instead of from hand-measured boxes. Each one keeps the orbit ring and
+   * its satellites — that ring is the motif the section is built on, and it is
+   * drawn into the render, not composed underneath it.
+   */
+  "assistant.context": "/assets/ai-context.webp",
+  "assistant.summary": "/assets/ai-summary.webp",
+  "assistant.quiz": "/assets/ai-quiz.webp",
+  "assistant.search": "/assets/ai-search.webp",
+  "assistant.voice": "/assets/ai-voice.webp",
+  "assistant.transcript": "/assets/ai-transcript.webp",
 } as const;
 
 /**

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BookCard } from "@/components/catalog/BookCard";
+import { RailNudge } from "@/components/primitives/RailNudge";
 import { Reveal } from "@/components/primitives/Reveal";
 import { SectionHeading } from "@/components/primitives/SectionHeading";
 import { DIALECTS, allBooks, booksByDialect } from "@/lib/catalog";
@@ -32,9 +33,12 @@ export function HomeCatalog() {
           lead="یک اثر می‌تواند با گوینده انسانی، با روایت هوش مصنوعی، یا به گویش مادری اجرا شود — با قیمت و طول مستقل. نسخه را شنونده انتخاب می‌کند."
           split
           action={
-            <Link href={routes.books()} className="btn btn-ghost">
-              همه کتاب‌ها
-            </Link>
+            <div className="flex items-center gap-3">
+              <RailNudge prevLabel="کتاب قبلی" nextLabel="کتاب بعدی" />
+              <Link href={routes.books()} className="btn btn-ghost">
+                همه کتاب‌ها
+              </Link>
+            </div>
           }
         />
       </div>
@@ -43,7 +47,10 @@ export function HomeCatalog() {
           which is what makes it read as "there is more" rather than as a
           truncated row. */}
       <Reveal amount={0.05} className="mt-9">
-        <ul className="rail-bleed no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2">
+        <ul
+          data-rail
+          className="rail-bleed no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2"
+        >
           {featured.map((book) => (
             <li key={book.slug} className="w-[220px] shrink-0 snap-start sm:w-[248px]">
               <BookCard book={book} className="h-full" />

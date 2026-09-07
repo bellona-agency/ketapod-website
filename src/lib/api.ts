@@ -271,11 +271,16 @@ export const FALLBACK_LOCALIZATION: LocalizationData = {
 };
 
 export const FALLBACK_SOCIAL_PROOF: SocialProofData = {
+  /* Zeroed deliberately. These are the numbers the stats bar shows when
+     `/home/social-proof` cannot be reached, and every one of them used to be an
+     invented figure — 1200 books, 20K users — presented to the reader as fact.
+     A fallback may be a placeholder; it may not be a claim. Real values come
+     from the endpoint. */
   stats: [
-    { label: "کتاب", value: "1200+" },
-    { label: "صدا", value: "18" },
-    { label: "کاربر", value: "20K+" },
-    { label: "همکار", value: "24" },
+    { label: "کتاب", value: "0" },
+    { label: "صدا", value: "0" },
+    { label: "کاربر", value: "0" },
+    { label: "همکار", value: "0" },
   ],
   testimonials: [
     {

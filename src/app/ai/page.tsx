@@ -1,11 +1,13 @@
 import { BookOpen, Compass, ListChecks, Mic, Quote, Search } from "lucide-react";
 import type { Metadata } from "next";
+import Image from "next/image";
 import { AssistantDemo } from "@/components/catalog/AssistantDemo";
 import { PageHeader } from "@/components/catalog/PageHeader";
 import { PageView } from "@/components/primitives/PageView";
 import { Reveal, RevealGroup, RevealItem } from "@/components/primitives/Reveal";
 import { Section } from "@/components/primitives/Section";
 import { LeadCta } from "@/components/sections/KidsCta";
+import { ASSETS } from "@/lib/assets";
 import { routes } from "@/lib/routes";
 import { pageMetadata } from "@/lib/seo";
 
@@ -16,38 +18,53 @@ export const metadata: Metadata = pageMetadata({
   path: routes.ai(),
 });
 
+/**
+ * `id` addresses the card's 3D render in `ASSETS`; `icon` is what the card
+ * falls back to if that render is ever missing, exactly as the Why Us cards do.
+ * Order is the order of the section mockup the art was cut from.
+ */
 const CAPABILITIES = [
   {
+    id: "context",
     icon: <Compass className="size-5" strokeWidth={1.6} />,
     title: "می‌داند کجای کتاب هستید",
     body: "هر پرسش با شناسه کتاب، فصل و ثانیه جاری فرستاده می‌شود. یعنی پاسخ هیچ‌وقت جلوتر از جایی که رسیده‌اید نمی‌رود — و اسپویل نمی‌دهد.",
   },
   {
+    id: "summary",
     icon: <BookOpen className="size-5" strokeWidth={1.6} />,
     title: "خلاصه کتاب و خلاصه فصل",
     body: "برگشتید و یادتان نیست کجا بودید؟ خلاصه‌ای از آنچه تا این لحظه شنیده‌اید، نه از کل کتاب.",
   },
   {
+    id: "quiz",
     icon: <ListChecks className="size-5" strokeWidth={1.6} />,
     title: "کوییز از محتوا",
     body: "چند پرسش کوتاه از همان فصل، برای وقتی که می‌خواهید بدانید چقدر مانده است.",
   },
   {
+    id: "search",
     icon: <Search className="size-5" strokeWidth={1.6} />,
     title: "جستجوی معنایی",
     body: "«کتابی می‌خواهم درباره تنهایی که تلخ نباشد» — پرسش را به زبان خودتان بپرسید، نه با کلیدواژه.",
   },
   {
+    id: "voice",
     icon: <Mic className="size-5" strokeWidth={1.6} />,
     title: "پرسش با صدا",
     body: "هدفون در گوش و دست مشغول است. در اپ موبایل می‌توانید بدون توقف پخش، با صدا بپرسید.",
   },
   {
+    id: "transcript",
     icon: <Quote className="size-5" strokeWidth={1.6} />,
     title: "روی متن واقعی کتاب",
     body: "پاسخ‌ها از ترنسکریپت همگام همان نسخه صوتی می‌آیند، نه از دانش عمومی درباره کتاب.",
   },
 ];
+
+/** The 3D render for a capability card, or undefined if it hasn't landed. */
+const art = (id: string): string | undefined =>
+  ASSETS[`assistant.${id}` as keyof typeof ASSETS];
 
 /**
  * The assistant's public page.
@@ -89,17 +106,37 @@ export default function AiPage() {
             </h2>
 
             <RevealGroup
-              className="mt-9 grid gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-3"
+              className="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
               stagger={0.06}
               amount={0.1}
             >
               {CAPABILITIES.map((item) => (
-                <RevealItem key={item.title} className="group flex flex-col gap-3">
-                  <span className="chip chip-paper chip-tilt" aria-hidden>
-                    {item.icon}
-                  </span>
-                  <h3 className="text-[19px] font-bold text-ink">{item.title}</h3>
-                  <p className="text-[16px] leading-[1.85] text-muted">{item.body}</p>
+                <RevealItem key={item.id}>
+                  {/* Art sits after the copy in the DOM so RTL puts it on the
+                      leading edge without a reversed flex — and so a screen
+                      reader reaches the heading first. */}
+                  <article className="group lift flex h-full items-center gap-4 rounded-lg border border-line bg-card p-5 shadow-e1 transition-[border-color,box-shadow,transform] duration-300 hover:border-violet-200 hover:shadow-e3 sm:gap-5 sm:p-6">
+                    <div className="flex min-w-0 flex-col gap-2.5">
+                      <h3 className="text-[19px] font-bold text-ink">{item.title}</h3>
+                      <p className="text-[15px] leading-[1.85] text-muted">{item.body}</p>
+                    </div>
+
+                    {art(item.id) ? (
+                      <span className="chip-tilt grid size-20 shrink-0 place-items-center transition-transform duration-300 sm:size-24">
+                        <Image
+                          src={art(item.id) as string}
+                          alt=""
+                          width={96}
+                          height={96}
+                          className="size-20 object-contain sm:size-24"
+                        />
+                      </span>
+                    ) : (
+                      <span className="chip chip-paper chip-tilt" aria-hidden>
+                        {item.icon}
+                      </span>
+                    )}
+                  </article>
                 </RevealItem>
               ))}
             </RevealGroup>

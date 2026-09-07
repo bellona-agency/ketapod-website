@@ -14,6 +14,15 @@ into a flat wash of one colour.
 
 Genuine accent hues (the green bubbles, the amber envelope, the kid's yellow
 hoodie) are outside the band and are left alone.
+
+**This is not idempotent.** The target band sits inside the source band, so a
+second pass compresses an already-harmonised render again — 229–248 becomes
+231–236, which is the flat wash the compression was designed to avoid. Pass the
+files to harmonise; the bare glob is there for the first run over a fresh sheet
+and will re-hue everything it finds.
+
+Usage:
+    python scripts/harmonise-assets.py --dry public/assets/ai-*.webp
 """
 
 import argparse
@@ -62,9 +71,10 @@ def harmonise(img: Image.Image) -> tuple[Image.Image, float]:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry", action="store_true")
+    ap.add_argument("files", nargs="*", help="defaults to every asset — see above")
     args = ap.parse_args()
 
-    for f in sorted(glob.glob("public/assets/*.webp")):
+    for f in sorted(args.files or glob.glob("public/assets/*.webp")):
         p = pathlib.Path(f)
         img = Image.open(p)
         out, pct = harmonise(img)
