@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FALLBACK_AUDIO_ITEM,
   getAudioItem,
-  getDemo,
   trackEvent,
   type AudioItem,
   type AudioSource,
@@ -27,40 +26,31 @@ const NO_ITEM_MSG = "در حال حاضر پخش صوت در دسترس نیست
  *
  * Status, the active source and the effective voice are all *derived* rather
  * than stored, so there is no window where the fetched item and the UI disagree.
+ *
+ * `demo` is handed in from the server rather than fetched on mount. That was a
+ * two-step waterfall — the browser had to hydrate, fetch the demo payload, and
+ * only then learn which book to request audio for. Seeded, the audio request
+ * can go out on the first render.
  */
-export function useDemoPlayer() {
+export function useDemoPlayer(demo: DemoData) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const [demo, setDemo] = useState<DemoData | null>(null);
   const [result, setResult] = useState<ItemResult | null>(null);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
 
-  const [activeBookId, setActiveBookId] = useState<string | null>(null);
+  const [activeBookId, setActiveBookId] = useState<string | null>(demo.sampleBook.id);
   /** What the user picked. The *effective* voice is derived from this below. */
-  const [voiceChoice, setVoiceChoice] = useState<string | null>(null);
+  const [voiceChoice, setVoiceChoice] = useState<string | null>(
+    demo.voices.find((v) => v.isDefault)?.id ?? demo.voices[0]?.id ?? null,
+  );
   const [selectedRecommendationId, setSelectedRecommendationId] = useState<string | null>(
     null,
   );
-  const [kidsModeEnabled, setKidsModeEnabled] = useState(false);
+  const [kidsModeEnabled, setKidsModeEnabled] = useState(demo.uiHints.kidsModeDefault);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-
-  /* ── Bootstrap: GET /public/home/demo ───────────────────────────────── */
-
-  useEffect(() => {
-    const ac = new AbortController();
-    getDemo(ac.signal).then((d) => {
-      if (ac.signal.aborted) return;
-      setDemo(d);
-      setActiveBookId(d.sampleBook.id);
-      setVoiceChoice(d.voices.find((v) => v.isDefault)?.id ?? d.voices[0]?.id ?? null);
-      setKidsModeEnabled(d.uiHints.kidsModeDefault);
-      setSelectedRecommendationId(null);
-    });
-    return () => ac.abort();
-  }, []);
 
   /* ── Audio item for the active book ─────────────────────────────────── */
 
@@ -69,7 +59,7 @@ export function useDemoPlayer() {
     const ac = new AbortController();
     let cancelled = false;
 
-    getAudioItem(activeBookId, ac.signal)
+    getAudioItem(activeBookId, { signal: ac.signal })
       .then((item) => {
         if (!cancelled) setResult({ bookId: activeBookId, item, failed: false });
       })

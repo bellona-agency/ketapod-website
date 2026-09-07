@@ -10,6 +10,13 @@ import { Kids } from "@/components/sections/Kids";
 import { LeadIntentFromUrl } from "@/components/sections/LeadIntentFromUrl";
 import { Problem } from "@/components/sections/Problem";
 import { WhyUs } from "@/components/sections/WhyUs";
+import {
+  getDemo,
+  getLeadOptions,
+  getLocalization,
+  getSocialProof,
+  SECTION_REVALIDATE,
+} from "@/lib/api";
 import { routes } from "@/lib/routes";
 import { pageMetadata } from "@/lib/seo";
 
@@ -54,8 +61,27 @@ const LeadForm = dynamic(() =>
  * site: the header, footer and backdrop moved to the layout, and `HomeCatalog`
  * now links out to the catalogue, the dialect pages and the narrators rather
  * than describing them.
+ *
+ * The four API-backed sections are read here rather than from a `useEffect` in
+ * each one. Fetched in the browser they were four independent round trips that
+ * could not even start until hydration finished, and each section rendered its
+ * fallback copy until its own request landed. Read here they are one parallel
+ * batch on the server, cached for `SECTION_REVALIDATE`, and the real copy is in
+ * the first HTML response.
+ *
+ * `getOrFallback` still absorbs a failing endpoint per section, so a dead API
+ * degrades the same way it always did — it just no longer does it in front of
+ * the reader.
  */
-export default function HomePage() {
+export default async function HomePage() {
+  const opts = { revalidate: SECTION_REVALIDATE };
+  const [demo, localization, socialProof, leadOptions] = await Promise.all([
+    getDemo(opts),
+    getLocalization(opts),
+    getSocialProof(opts),
+    getLeadOptions(opts),
+  ]);
+
   return (
     <>
       <PageView name="home" />
@@ -66,12 +92,12 @@ export default function HomePage() {
         <HomeCatalog />
         <Problem />
         <Features />
-        <InteractiveDemo />
+        <InteractiveDemo demo={demo} />
         <Kids />
-        <Localization />
-        <SocialProof />
+        <Localization data={localization} />
+        <SocialProof data={socialProof} />
         <Faq />
-        <LeadForm />
+        <LeadForm options={leadOptions} />
         <FinalCta />
       </main>
     </>

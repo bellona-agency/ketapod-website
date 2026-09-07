@@ -25,7 +25,10 @@ type Tag =
   | "article"
   | "header"
   | "footer"
-  | "figure";
+  | "figure"
+  /* `span` is here for reveals that sit inside a flex row of chips, where a
+     `div` would be the same box but the wrong element. */
+  | "span";
 
 /**
  * One IntersectionObserver, one boolean. The transition itself is the

@@ -146,10 +146,19 @@ export type LeadResult =
 
 /* ── Transport ───────────────────────────────────────────────────────────── */
 
-async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
+/**
+ * `revalidate` is only meaningful on the server, where Next's data cache reads
+ * it; in the browser the key is ignored. It is what lets the home page's four
+ * section reads happen once per window across all visitors rather than once per
+ * visitor per page view.
+ */
+export type ReadOpts = { signal?: AbortSignal; revalidate?: number };
+
+async function getJson<T>(path: string, opts: ReadOpts = {}): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
-    signal,
+    signal: opts.signal,
     headers: { Accept: "application/json" },
+    ...(opts.revalidate === undefined ? {} : { next: { revalidate: opts.revalidate } }),
   });
   if (!res.ok) throw new Error(`${path} → ${res.status}`);
   return (await res.json()) as T;
@@ -159,10 +168,10 @@ async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
 async function getOrFallback<T>(
   path: string,
   fallback: T,
-  signal?: AbortSignal,
+  opts: ReadOpts = {},
 ): Promise<T> {
   try {
-    return await getJson<T>(path, signal);
+    return await getJson<T>(path, opts);
   } catch {
     return fallback;
   }
@@ -333,24 +342,33 @@ export const FALLBACK_LEAD_OPTIONS: LeadOptions = {
 
 /* ── Readers ─────────────────────────────────────────────────────────────── */
 
-export const getStats = (signal?: AbortSignal) =>
+/**
+ * How long the server may serve a cached copy of each section's payload.
+ *
+ * These four are editorial content that changes on a human timescale, so a
+ * fifteen-minute window costs nothing in freshness and takes the API off the
+ * critical path of every page view.
+ */
+export const SECTION_REVALIDATE = 900;
+
+export const getStats = (opts?: ReadOpts) =>
   getOrFallback<{ stats: Stat[] }>(
     ENDPOINTS.stats,
     { stats: FALLBACK_STATS },
-    signal,
+    opts,
   ).then((r) => r.stats ?? FALLBACK_STATS);
 
-export const getDemo = (signal?: AbortSignal) =>
-  getOrFallback<DemoData>(ENDPOINTS.demo, FALLBACK_DEMO, signal);
+export const getDemo = (opts?: ReadOpts) =>
+  getOrFallback<DemoData>(ENDPOINTS.demo, FALLBACK_DEMO, opts);
 
-export const getLocalization = (signal?: AbortSignal) =>
-  getOrFallback<LocalizationData>(ENDPOINTS.localization, FALLBACK_LOCALIZATION, signal);
+export const getLocalization = (opts?: ReadOpts) =>
+  getOrFallback<LocalizationData>(ENDPOINTS.localization, FALLBACK_LOCALIZATION, opts);
 
-export const getSocialProof = (signal?: AbortSignal) =>
-  getOrFallback<SocialProofData>(ENDPOINTS.socialProof, FALLBACK_SOCIAL_PROOF, signal);
+export const getSocialProof = (opts?: ReadOpts) =>
+  getOrFallback<SocialProofData>(ENDPOINTS.socialProof, FALLBACK_SOCIAL_PROOF, opts);
 
-export const getLeadOptions = (signal?: AbortSignal) =>
-  getOrFallback<LeadOptions>(ENDPOINTS.leadOptions, FALLBACK_LEAD_OPTIONS, signal);
+export const getLeadOptions = (opts?: ReadOpts) =>
+  getOrFallback<LeadOptions>(ENDPOINTS.leadOptions, FALLBACK_LEAD_OPTIONS, opts);
 
 /**
  * Audio item lookup. Unlike the other readers this one *throws*, because the
@@ -360,9 +378,9 @@ export const getLeadOptions = (signal?: AbortSignal) =>
  */
 export async function getAudioItem(
   bookId: string,
-  signal?: AbortSignal,
+  opts?: ReadOpts,
 ): Promise<AudioItem> {
-  return getJson<AudioItem>(ENDPOINTS.audioItem(bookId), signal);
+  return getJson<AudioItem>(ENDPOINTS.audioItem(bookId), opts);
 }
 
 /* ── Writers ─────────────────────────────────────────────────────────────── */

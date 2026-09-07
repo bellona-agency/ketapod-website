@@ -1,6 +1,5 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { AudioLines, Loader2, Pause, Play, Sparkles, TriangleAlert } from "lucide-react";
 import { AssetSlot, Float } from "@/components/primitives/AssetSlot";
 import { asset } from "@/lib/assets";
@@ -9,7 +8,7 @@ import { Reveal } from "@/components/primitives/Reveal";
 import { SectionHeading } from "@/components/primitives/SectionHeading";
 import { Waveform } from "@/components/primitives/Waveform";
 import { useDemoPlayer } from "@/hooks/useDemoPlayer";
-import { EASE_OUT_EXPO, springSoft } from "@/lib/motion";
+import { type DemoData } from "@/lib/api";
 import { cn, formatTime } from "@/lib/utils";
 
 /*
@@ -30,9 +29,11 @@ const PANEL_KIDS = "#EFF1FF";
  * control drives the element directly. Kids mode is a page-local UI state (never
  * persisted here, per the spec) and repaints the whole console so the difference
  * between the two scenarios is something you can see, not just read.
+ *
+ * The demo payload is server-fetched and handed to the player; only the audio
+ * item, which changes as the reader picks books, is still fetched here.
  */
-export function InteractiveDemo() {
-  const prefersReduced = useReducedMotion();
+export function InteractiveDemo({ demo: initialDemo }: { demo: DemoData }) {
   const {
     audioRef,
     demo,
@@ -57,7 +58,7 @@ export function InteractiveDemo() {
     selectVoice,
     selectRecommendation,
     toggleKidsMode,
-  } = useDemoPlayer();
+  } = useDemoPlayer(initialDemo);
   const kids = kidsModeEnabled;
 
   const ink = kids ? "text-ink" : "text-night-ink";
@@ -67,27 +68,23 @@ export function InteractiveDemo() {
   return (
     <section id="demo" className="section-rhythm relative">
       <div className="container-k">
-        <motion.div
+        <div
           /* Same `panel` shell as Problem, Kids and the Final CTA. Only the
-             fill is animated, because Kids mode repaints it. */
-          className="panel"
-          /* `initial={false}` paints the panel on first render instead of
-             fading it up from transparent on mount. */
-          initial={false}
-          animate={{ backgroundColor: kids ? PANEL_KIDS : PANEL_DARK }}
-          transition={{ duration: 0.55, ease: EASE_OUT_EXPO }}
+             fill is animated, because Kids mode repaints it — as a plain CSS
+             transition on an inline value, which needs no library and paints on
+             the first render rather than fading up from transparent. */
+          className="panel transition-colors duration-[550ms] ease-[var(--ease-out-expo)]"
+          style={{ backgroundColor: kids ? PANEL_KIDS : PANEL_DARK }}
         >
           {/* atmosphere */}
           <div aria-hidden className="pointer-events-none absolute inset-0">
-            <motion.div
-              className="absolute -top-24 left-[8%] size-[440px] rounded-full"
-              initial={false}
-              animate={{
+            <div
+              className="absolute -top-24 left-[8%] size-[440px] rounded-full transition-[background] duration-[550ms]"
+              style={{
                 background: kids
                   ? "radial-gradient(circle, rgba(42,56,255,0.18) 0%, transparent 68%)"
                   : "radial-gradient(circle, rgba(110,120,255,0.34) 0%, transparent 66%)",
               }}
-              transition={{ duration: 0.55 }}
             />
             <div
               className={cn(
@@ -159,16 +156,12 @@ export function InteractiveDemo() {
                     const recommended = kids && v.id === recommendedVoiceId;
                     return (
                       <li key={v.id}>
-                        <motion.button
+                        <button
                           type="button"
                           disabled={!v.available}
                           onClick={() => selectVoice(v.id)}
-                          whileHover={
-                            prefersReduced || !v.available ? undefined : { x: -4 }
-                          }
-                          transition={springSoft}
                           className={cn(
-                            "flex w-full items-center gap-3 rounded-sm px-3 py-2.5 text-right transition-colors duration-200",
+                            "kp-nudge flex w-full items-center gap-3 rounded-sm px-3 py-2.5 text-right",
                             v.available ? "cursor-pointer" : "cursor-not-allowed opacity-40",
                             active
                               ? "bg-violet text-white"
@@ -225,7 +218,7 @@ export function InteractiveDemo() {
                               barClassName="w-[2px]"
                             />
                           )}
-                        </motion.button>
+                        </button>
                       </li>
                     );
                   })}
@@ -303,16 +296,13 @@ export function InteractiveDemo() {
 
                 {/* transport */}
                 <div className="mt-5 flex items-center justify-center gap-4">
-                  <motion.button
+                  <button
                     type="button"
                     onClick={toggle}
                     disabled={!canPlay}
                     aria-label={isPlaying ? "توقف پخش" : "پخش"}
-                    whileHover={prefersReduced || !canPlay ? undefined : { scale: 1.06 }}
-                    whileTap={prefersReduced || !canPlay ? undefined : { scale: 0.94 }}
-                    transition={springSoft}
                     className={cn(
-                      "grid size-16 place-items-center rounded-full text-white transition-colors duration-200",
+                      "kp-press grid size-16 place-items-center rounded-full text-white",
                       /* The play button is the same in both modes now — it was
                          only ever branching to swap violet for amber. */
                       canPlay
@@ -327,30 +317,27 @@ export function InteractiveDemo() {
                     ) : (
                       <Play className="size-6 translate-x-[-2px] fill-current" strokeWidth={0} />
                     )}
-                  </motion.button>
+                  </button>
                 </div>
 
-                {/* player-level error / unavailable notice */}
-                <AnimatePresence>
-                  {error && (
-                    <motion.p
-                      key={error}
-                      role="status"
-                      initial={{ opacity: 0, y: -6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0 }}
-                      className={cn(
-                        "mt-4 flex items-center justify-center gap-2 rounded-sm px-3 py-2 text-center text-[15px]",
-                        kids
-                          ? "bg-rose-100 text-rose-ink"
-                          : "bg-white/[0.07] text-night-muted",
-                      )}
-                    >
-                      <TriangleAlert className="size-3.5 shrink-0" strokeWidth={1.9} aria-hidden />
-                      {error}
-                    </motion.p>
-                  )}
-                </AnimatePresence>
+                {/* player-level error / unavailable notice. `key` restarts the
+                    entrance when the message text changes, which is what the
+                    old `AnimatePresence` child key was doing. */}
+                {error && (
+                  <p
+                    key={error}
+                    role="status"
+                    className={cn(
+                      "kp-pop-in mt-4 flex items-center justify-center gap-2 rounded-sm px-3 py-2 text-center text-[15px]",
+                      kids
+                        ? "bg-rose-100 text-rose-ink"
+                        : "bg-white/[0.07] text-night-muted",
+                    )}
+                  >
+                    <TriangleAlert className="size-3.5 shrink-0" strokeWidth={1.9} aria-hidden />
+                    {error}
+                  </p>
+                )}
 
                 <audio ref={audioRef} preload="metadata" className="hidden" />
               </Reveal>
@@ -368,15 +355,13 @@ export function InteractiveDemo() {
                       const isKidsItem = r.type === "kids";
                       return (
                         <li key={r.id}>
-                          <motion.button
+                          <button
                             type="button"
                             onClick={() =>
                               selectRecommendation(r.id, r.bookId, r.tag, i + 1)
                             }
-                            whileHover={prefersReduced ? undefined : { x: -4 }}
-                            transition={springSoft}
                             className={cn(
-                              "flex w-full cursor-pointer items-center gap-3 rounded-sm p-2 text-right transition-colors duration-200",
+                              "kp-nudge flex w-full cursor-pointer items-center gap-3 rounded-sm p-2 text-right",
                               active
                                 ? kids
                                   ? "bg-violet-100 ring-1 ring-violet-200"
@@ -412,7 +397,7 @@ export function InteractiveDemo() {
                                 {r.tag}
                               </span>
                             </span>
-                          </motion.button>
+                          </button>
                         </li>
                       );
                     })}
@@ -449,17 +434,18 @@ export function InteractiveDemo() {
                             kids ? "bg-violet-100" : "bg-white/12",
                           )}
                         >
-                          <motion.span
+                          {/* Fills when the enclosing `Reveal` flips its
+                              `data-shown` — see `.kp-bar-fill`. */}
+                          <span
                             className={cn(
-                              "block h-full rounded-full",
+                              "kp-bar-fill block h-full rounded-full",
                               kids ? "bg-violet" : "bg-violet-200",
                             )}
-                            initial={{ width: 0 }}
-                            whileInView={{
-                              width: `${demo.continueListening.progressPercent}%`,
-                            }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 1, ease: EASE_OUT_EXPO }}
+                            style={
+                              {
+                                "--kp-fill": `${demo.continueListening.progressPercent}%`,
+                              } as React.CSSProperties
+                            }
                           />
                         </div>
                       </div>
@@ -472,7 +458,7 @@ export function InteractiveDemo() {
               </Reveal>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
@@ -523,10 +509,9 @@ function KidsToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
           on ? "bg-white/35" : "bg-white/20",
         )}
       >
-        <motion.span
-          className="block size-5 rounded-full bg-white shadow-e1"
-          animate={{ x: on ? -20 : 0 }}
-          transition={springSoft}
+        <span
+          className="kp-knob block size-5 rounded-full bg-white shadow-e1"
+          data-on={on || undefined}
         />
       </span>
     </button>
