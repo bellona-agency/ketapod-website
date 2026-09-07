@@ -1,8 +1,6 @@
-"use client";
-
-import { ChevronLeft, ChevronRight, Quote } from "lucide-react";
+import { Quote } from "lucide-react";
 import Image from "next/image";
-import { useRef } from "react";
+import { RailNudge } from "@/components/primitives/RailNudge";
 import { Reveal, RevealGroup, RevealItem } from "@/components/primitives/Reveal";
 import { Aura } from "@/components/primitives/Aura";
 import { SectionHeading } from "@/components/primitives/SectionHeading";
@@ -27,15 +25,6 @@ const AVATAR_TINTS = [
  * and `page.tsx` for why none of these sections fetch on mount any more.
  */
 export function SocialProof({ data }: { data: SocialProofData }) {
-  const railRef = useRef<HTMLDivElement>(null);
-
-  function nudge(dir: 1 | -1) {
-    const el = railRef.current;
-    if (!el) return;
-    /* RTL scroll offsets run negative — direction is flipped deliberately. */
-    el.scrollBy({ left: dir * -340, behavior: "smooth" });
-  }
-
   return (
     <section id="social-proof" className="section-rhythm relative overflow-hidden">
       <Aura mark="arc" className="right-[-12%] top-24 hidden md:block" size="size-[400px]" />
@@ -46,16 +35,7 @@ export function SocialProof({ data }: { data: SocialProofData }) {
           eyebrow="Social Proof"
           title="آنچه کاربران می‌گویند"
           lead="بازخوردهای واقعی از کسانی که تجربه شنیدن‌شان با کتاپاد تغییر کرده است."
-          action={
-            <div className="flex items-center gap-2">
-              <RailButton onClick={() => nudge(-1)} label="نظر قبلی">
-                <ChevronRight className="size-5" strokeWidth={1.8} />
-              </RailButton>
-              <RailButton onClick={() => nudge(1)} label="نظر بعدی">
-                <ChevronLeft className="size-5" strokeWidth={1.8} />
-              </RailButton>
-            </div>
-          }
+          action={<RailNudge prevLabel="نظر قبلی" nextLabel="نظر بعدی" />}
         />
 
         {/* ── Stats line ───────────────────────────────────────── */}
@@ -78,7 +58,7 @@ export function SocialProof({ data }: { data: SocialProofData }) {
       {/* ── Testimonial rail (full-bleed) ──────────────────────── */}
       <Reveal delay={0.05} className="mt-10">
         <div
-          ref={railRef}
+          data-rail
           className="rail-bleed no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto pb-10 pt-6"
         >
           {data.testimonials.map((t, i) => (
@@ -141,26 +121,5 @@ export function SocialProof({ data }: { data: SocialProofData }) {
         </div>
       </Reveal>
     </section>
-  );
-}
-
-function RailButton({
-  onClick,
-  label,
-  children,
-}: {
-  onClick: () => void;
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      className="grid size-11 cursor-pointer place-items-center rounded-full border border-line-2 bg-card text-ink transition-colors duration-200 hover:border-ink hover:bg-ink hover:text-white"
-    >
-      {children}
-    </button>
   );
 }
