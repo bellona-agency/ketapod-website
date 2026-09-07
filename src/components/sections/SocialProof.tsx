@@ -1,18 +1,12 @@
 "use client";
 
-import { motion, useReducedMotion } from "motion/react";
 import { ChevronLeft, ChevronRight, Quote } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { Reveal, RevealGroup, RevealItem } from "@/components/primitives/Reveal";
 import { Aura } from "@/components/primitives/Aura";
 import { SectionHeading } from "@/components/primitives/SectionHeading";
-import {
-  FALLBACK_SOCIAL_PROOF,
-  getSocialProof,
-  type SocialProofData,
-} from "@/lib/api";
-import { LIFT, springSoft } from "@/lib/motion";
+import { type SocialProofData } from "@/lib/api";
 import { cn, faFigure } from "@/lib/utils";
 
 const AVATAR_TINTS = [
@@ -28,19 +22,12 @@ const AVATAR_TINTS = [
  * Testimonials sit on a drag/scroll rail with alternating vertical offsets
  * rather than in a tidy grid: four equal boxes read as filler, a rail reads as
  * a stack of real quotes you can push through.
+ *
+ * Stats and testimonials arrive as a prop from the server — see `Localization`
+ * and `page.tsx` for why none of these sections fetch on mount any more.
  */
-export function SocialProof() {
-  const prefersReduced = useReducedMotion();
-  const [data, setData] = useState<SocialProofData>(FALLBACK_SOCIAL_PROOF);
+export function SocialProof({ data }: { data: SocialProofData }) {
   const railRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const ac = new AbortController();
-    getSocialProof(ac.signal).then((d) => {
-      if (!ac.signal.aborted && d) setData(d);
-    });
-    return () => ac.abort();
-  }, []);
 
   function nudge(dir: 1 | -1) {
     const el = railRef.current;
@@ -107,13 +94,11 @@ export function SocialProof() {
               className="shrink-0 snap-start"
               style={{ marginTop: i % 2 === 1 ? 26 : 0 }}
             >
-              <motion.figure
-                className="w-[300px] rounded-lg border border-line bg-card p-5 shadow-e2 sm:p-6 sm:w-[340px]"
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.3 }}
-                transition={{ ...springSoft, delay: 0.05 * i }}
-                whileHover={prefersReduced ? undefined : { y: LIFT }}
+              <Reveal
+                as="figure"
+                delay={0.05 * i}
+                amount={0.3}
+                className="lift w-[300px] rounded-lg border border-line bg-card p-5 shadow-e2 sm:p-6 sm:w-[340px]"
               >
                 <Quote
                   className="size-7 rotate-180 text-violet/25"
@@ -150,7 +135,7 @@ export function SocialProof() {
                     <span className="block text-[15px] text-muted">{t.role}</span>
                   </span>
                 </figcaption>
-              </motion.figure>
+              </Reveal>
             </div>
           ))}
         </div>

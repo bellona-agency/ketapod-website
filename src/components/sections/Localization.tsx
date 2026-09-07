@@ -1,7 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AssetSlot, Float } from "@/components/primitives/AssetSlot";
 import { asset } from "@/lib/assets";
 import { CoverArt } from "@/components/primitives/CoverArt";
@@ -9,12 +8,7 @@ import { Marquee } from "@/components/primitives/Marquee";
 import { Reveal, RevealGroup, RevealItem } from "@/components/primitives/Reveal";
 import { Aura } from "@/components/primitives/Aura";
 import { SectionHeading } from "@/components/primitives/SectionHeading";
-import {
-  FALLBACK_LOCALIZATION,
-  getLocalization,
-  type LocalizationData,
-} from "@/lib/api";
-import { springSoft } from "@/lib/motion";
+import { type LocalizationData } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 /**
@@ -23,19 +17,14 @@ import { cn } from "@/lib/utils";
  * Structure is fixed in the front-end; title, subtitle, languages, topics and
  * samples all come from `/home/localization`. Picking a language filters the
  * samples in place — the point of the section is easier to feel than to read.
+ *
+ * The payload arrives as a prop from the server rather than from a `useEffect`
+ * on mount. That is what puts this section's real copy in the first HTML
+ * response instead of a fallback that gets swapped a second later, and it takes
+ * the API off the browser's critical path — see `page.tsx`.
  */
-export function Localization() {
-  const prefersReduced = useReducedMotion();
-  const [data, setData] = useState<LocalizationData>(FALLBACK_LOCALIZATION);
+export function Localization({ data }: { data: LocalizationData }) {
   const [lang, setLang] = useState<string | null>(null);
-
-  useEffect(() => {
-    const ac = new AbortController();
-    getLocalization(ac.signal).then((d) => {
-      if (!ac.signal.aborted && d) setData(d);
-    });
-    return () => ac.abort();
-  }, []);
 
   const samples = lang ? data.samples.filter((s) => s.language === lang) : data.samples;
   const visible = samples.length ? samples : data.samples;
@@ -75,16 +64,14 @@ export function Localization() {
               <p className="eyebrow">Local topics</p>
               <div className="mt-4 flex flex-wrap gap-2">
                 {data.localTopics.map((t, i) => (
-                  <motion.span
+                  <Reveal
                     key={t}
+                    as="span"
+                    delay={0.05 * i}
                     className="rounded-full border border-line bg-card px-3.5 py-2 text-[16px] text-ink-2 shadow-e1"
-                    initial={{ opacity: 0, y: 10 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ ...springSoft, delay: 0.05 * i }}
                   >
                     {t}
-                  </motion.span>
+                  </Reveal>
                 ))}
               </div>
             </Reveal>
@@ -94,15 +81,19 @@ export function Localization() {
           <Reveal delay={0.08} className="relative">
             <ul className="relative flex flex-col gap-3 sm:ps-10">
               {visible.map((s, i) => (
-                <motion.li
+                /*
+                 * This used to carry `layout` as well, which animated the rows
+                 * into their new positions when a language filter changed. That
+                 * is the one thing the shared-layout engine did here, and it is
+                 * why `key` is the sample id — remounting on filter gives the
+                 * incoming rows their entrance instead.
+                 */
+                <Reveal
                   key={s.id}
-                  layout
-                  initial={{ opacity: 0, x: 30 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ ...springSoft, delay: 0.08 * i }}
-                  whileHover={prefersReduced ? undefined : { y: -5 }}
-                  className="flex items-center gap-4 rounded-lg border border-line bg-card p-3.5 shadow-e2"
+                  as="li"
+                  v="inline"
+                  delay={0.08 * i}
+                  className="lift flex items-center gap-4 rounded-lg border border-line bg-card p-3.5 shadow-e2"
                 >
                   <CoverArt
                     src={s.coverUrl || undefined}
@@ -122,7 +113,7 @@ export function Localization() {
                   <span className="tnum shrink-0 rounded-full bg-violet-50 px-2.5 py-1 text-[13px] font-semibold uppercase text-violet-700">
                     {s.language}
                   </span>
-                </motion.li>
+                </Reveal>
               ))}
             </ul>
 
@@ -188,11 +179,9 @@ function ChipButton({
       )}
     >
       {active && (
-        <motion.span
-          layoutId="lang-chip"
-          className="absolute inset-0 -z-10 rounded-full bg-violet shadow-violet"
-          transition={springSoft}
-        />
+        /* Was a shared-`layoutId` pill that slid between chips; it fades now,
+           the same trade the header's nav pill makes. */
+        <span className="kp-nav-pill absolute inset-0 -z-10 rounded-full bg-violet shadow-violet" />
       )}
       {children}
     </button>

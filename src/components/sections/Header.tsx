@@ -1,16 +1,14 @@
 "use client";
 
-import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/react";
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { BrandIcon, BrandMark } from "@/components/primitives/BrandMark";
 import { Cta } from "@/components/primitives/Cta";
 import { PRIMARY_CTA_LABEL } from "@/lib/content";
 import { trackEvent } from "@/lib/api";
 import { isActivePath, LEAD_HREF, NAV_LINKS, routes } from "@/lib/routes";
-import { EASE_OUT_EXPO, springSoft } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 /**
@@ -22,17 +20,35 @@ import { cn } from "@/lib/utils";
  * internal-linking structure of an SEO-first site and a crawler cannot press a
  * button.
  *
- * The chrome itself is unchanged: the same pill that gains a background past
- * 24px of scroll, the same drawer, the same shared `layoutId` pill behind the
- * active item.
+ * The chrome reads the same as before: the pill gains a background past 24px of
+ * scroll, the drawer slides in from the RTL start edge, and the active item
+ * carries a pill. What changed is that none of it runs through an animation
+ * library any more — see the header and drawer rules in `globals.css` for why
+ * that mattered enough to give up the sliding pill.
  */
 export function Header() {
-  const { scrollY } = useScroll();
   const pathname = usePathname();
   const [condensed, setCondensed] = useState(false);
   const [open, setOpen] = useState(false);
 
-  useMotionValueEvent(scrollY, "change", (v) => setCondensed(v > 24));
+  /*
+   * `useScroll` + `useMotionValueEvent` did this before. A passive listener is
+   * the whole of what was being used, and the ref guard means a scroll only
+   * reaches React on the two frames where the flag actually flips rather than
+   * on all of them.
+   */
+  const condensedRef = useRef(false);
+  useEffect(() => {
+    const onScroll = () => {
+      const next = window.scrollY > 24;
+      if (next === condensedRef.current) return;
+      condensedRef.current = next;
+      setCondensed(next);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   /* Lock the page while the drawer owns the screen. */
   useEffect(() => {
@@ -42,6 +58,17 @@ export function Header() {
     };
   }, [open]);
 
+  /* Escape closes it, which the drawer got for free from AnimatePresence's
+     focus handling before and now has to ask for. */
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
   /* The drawer closes on the click that navigates, not in an effect watching
      the pathname. Same result, but it is the interaction that closes it rather
      than a render pass reacting to its own consequence. */
@@ -49,21 +76,19 @@ export function Header() {
 
   return (
     <>
-      <motion.header
-        className="fixed inset-x-0 top-0 z-50 px-3 pt-3 md:px-5 md:pt-4"
-        initial={{ y: -24, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.7, ease: EASE_OUT_EXPO, delay: 0.05 }}
-      >
-        <motion.div
+      <header className="kp-header-in fixed inset-x-0 top-0 z-50 px-3 pt-3 md:px-5 md:pt-4">
+        <div
           className={cn(
-            "mx-auto flex max-w-[1216px] items-center gap-3 rounded-full transition-[background-color,box-shadow,border-color] duration-400",
+            "mx-auto flex max-w-[1216px] items-center gap-3 rounded-full transition-[background-color,box-shadow,border-color,padding-inline] duration-400 ease-[var(--ease-out-quint)]",
             condensed
-              ? "border border-line bg-card/85 shadow-e3 backdrop-blur-xl"
-              : "border border-transparent bg-transparent",
+              ? "border border-line bg-card/85 px-3 shadow-e3"
+              : "border border-transparent bg-transparent px-2",
+            /* The pill's blur is dropped while the drawer is open. The header
+               sits under a full-screen scrim then, so the blur is doing work
+               nobody can see — and it is the layer the scrim would otherwise
+               have to composite through. */
+            condensed && !open && "backdrop-blur-xl",
           )}
-          animate={{ paddingInline: condensed ? 12 : 8 }}
-          transition={springSoft}
         >
           {/* Brand — now the site's home link rather than a scroll-to-top. */}
           <Link
@@ -89,10 +114,12 @@ export function Header() {
                   )}
                 >
                   {active && (
-                    <motion.span
-                      layoutId="nav-pill"
-                      className="absolute inset-0 -z-10 rounded-full bg-violet-50 ring-1 ring-violet-100"
-                      transition={springSoft}
+                    <span
+                      /* `key` restarts the fade when the active route changes;
+                         without it React reuses the node across navigations and
+                         the pill simply teleports. */
+                      key={item.href}
+                      className="kp-nav-pill absolute inset-0 -z-10 rounded-full bg-violet-50 ring-1 ring-violet-100"
                     />
                   )}
                   {item.label}
@@ -125,93 +152,86 @@ export function Header() {
               <Menu className="size-5" strokeWidth={1.8} />
             </button>
           </div>
-        </motion.div>
-      </motion.header>
+        </div>
+      </header>
 
-      {/* Mobile drawer */}
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            key="drawer"
-            className="fixed inset-0 z-60 xl:hidden"
-            initial="hidden"
-            animate="show"
-            exit="hidden"
-          >
-            <motion.button
+      {/*
+        Mobile drawer. Permanently mounted and toggled through `data-open` —
+        `AnimatePresence` was only ever here to keep the panel alive long enough
+        to animate out, and CSS can do that as long as the node stays.
+
+        `inert` is what makes that safe: closed, the drawer's links leave the tab
+        order and the accessibility tree, so a keyboard user cannot land inside a
+        panel that is not on screen.
+      */}
+      <div
+        className="kp-drawer fixed inset-0 z-60 xl:hidden"
+        data-open={open || undefined}
+        inert={!open}
+      >
+        <button
+          type="button"
+          aria-label="بستن منو"
+          onClick={() => setOpen(false)}
+          className="kp-drawer-scrim absolute inset-0 cursor-pointer bg-ink/45"
+        />
+        <div className="kp-drawer-panel absolute inset-y-0 right-0 flex w-[86%] max-w-[360px] flex-col bg-paper shadow-e4">
+          <div className="flex items-center justify-between border-b border-line px-5 py-4">
+            <BrandMark animated={false} />
+            <button
               type="button"
-              aria-label="بستن منو"
               onClick={() => setOpen(false)}
-              className="absolute inset-0 cursor-pointer bg-ink/35 backdrop-blur-sm"
-              variants={{ hidden: { opacity: 0 }, show: { opacity: 1 } }}
-              transition={{ duration: 0.25 }}
-            />
-            <motion.div
-              className="absolute inset-y-0 right-0 flex w-[86%] max-w-[360px] flex-col bg-paper shadow-e4"
-              variants={{ hidden: { x: "100%" }, show: { x: 0 } }}
-              transition={{ duration: 0.45, ease: EASE_OUT_EXPO }}
+              className="grid size-10 cursor-pointer place-items-center rounded-full border border-line text-ink transition-colors hover:bg-paper-2"
+              aria-label="بستن منو"
             >
-              <div className="flex items-center justify-between border-b border-line px-5 py-4">
-                <BrandMark animated={false} />
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="grid size-10 cursor-pointer place-items-center rounded-full border border-line text-ink transition-colors hover:bg-paper-2"
-                  aria-label="بستن منو"
-                >
-                  <X className="size-5" strokeWidth={1.8} />
-                </button>
-              </div>
+              <X className="size-5" strokeWidth={1.8} />
+            </button>
+          </div>
 
-              <motion.nav
-                className="flex flex-1 flex-col gap-1 overflow-y-auto p-4"
-                variants={{
-                  hidden: {},
-                  show: { transition: { staggerChildren: 0.05, delayChildren: 0.12 } },
-                }}
-                aria-label="ناوبری موبایل"
+          {/* The stagger is a CSS keyframe with a per-item delay rather than six
+              motion instances — see `.kp-drawer-item`. It runs while the panel
+              is still sliding, so it is the one place on this page where the
+              difference is felt rather than measured. */}
+          <nav
+            className="flex flex-1 flex-col gap-1 overflow-y-auto p-4"
+            aria-label="ناوبری موبایل"
+          >
+            {NAV_LINKS.map((item, i) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={closeDrawer}
+                aria-current={isActivePath(item.href, pathname) ? "page" : undefined}
+                className={cn(
+                  "kp-drawer-item flex items-center gap-3 rounded-md px-3 py-3.5 text-right text-[18px] font-medium transition-colors hover:bg-paper-2",
+                  isActivePath(item.href, pathname) ? "bg-violet-50 text-violet" : "text-ink",
+                )}
+                style={{ "--kp-delay": `${(0.12 + i * 0.05).toFixed(2)}s` } as CSSProperties}
               >
-                {NAV_LINKS.map((item, i) => (
-                  <motion.div
-                    key={item.href}
-                    variants={{ hidden: { opacity: 0, x: 24 }, show: { opacity: 1, x: 0 } }}
-                  >
-                    <Link
-                      href={item.href}
-                      onClick={closeDrawer}
-                      aria-current={isActivePath(item.href, pathname) ? "page" : undefined}
-                      className={cn(
-                        "flex items-center gap-3 rounded-md px-3 py-3.5 text-right text-[18px] font-medium transition-colors hover:bg-paper-2",
-                        isActivePath(item.href, pathname) ? "bg-violet-50 text-violet" : "text-ink",
-                      )}
-                    >
-                      <span className="tnum text-[13px] text-faint">
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-                      {item.label}
-                    </Link>
-                  </motion.div>
-                ))}
-              </motion.nav>
+                <span className="tnum text-[13px] text-faint">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                {item.label}
+              </Link>
+            ))}
+          </nav>
 
-              <div className="border-t border-line p-4">
-                <Link
-                  href={LEAD_HREF}
-                  onClick={() => {
-                    trackEvent("header_cta_clicked", "header", "drawer_cta", {
-                      target: LEAD_HREF,
-                    });
-                    closeDrawer();
-                  }}
-                  className="btn btn-primary w-full"
-                >
-                  {PRIMARY_CTA_LABEL}
-                </Link>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          <div className="border-t border-line p-4">
+            <Link
+              href={LEAD_HREF}
+              onClick={() => {
+                trackEvent("header_cta_clicked", "header", "drawer_cta", {
+                  target: LEAD_HREF,
+                });
+                closeDrawer();
+              }}
+              className="btn btn-primary w-full"
+            >
+              {PRIMARY_CTA_LABEL}
+            </Link>
+          </div>
+        </div>
+      </div>
     </>
   );
 }

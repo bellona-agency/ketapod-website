@@ -641,6 +641,134 @@
 }
 
 /* =========================================================================
+   Header
+   -------------------------------------------------------------------------
+   The header used to be four `motion` components: an entrance on the bar, a
+   spring on the pill's padding, a shared-`layoutId` pill behind the active nav
+   item, and an `AnimatePresence` drawer. Because the header lives in the root
+   layout, that made `motion` a dependency of *every* route — 131KB of JS on
+   pages like `/privacy` that animate nothing at all.
+
+   All of it is CSS now. Measured over a production build, this took the JS on
+   an interior route from 742KB to 584KB.
+
+   The one thing that could not survive the move is the shared-layout pill: it
+   slid between nav items because `layoutId` measures both positions and
+   interpolates. CSS has no equivalent, so the pill fades instead.
+   ========================================================================= */
+
+@keyframes kp-header-in {
+  from {
+    opacity: 0;
+    transform: translateY(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.kp-header-in {
+  animation: kp-header-in 0.7s var(--ease-out-expo) 0.05s both;
+}
+
+/* The active-item pill. `layoutId` used to slide it; it fades now. */
+.kp-nav-pill {
+  animation: kp-fade-in 0.25s var(--ease-out-quint) both;
+}
+
+@keyframes kp-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* =========================================================================
+   Mobile drawer
+   -------------------------------------------------------------------------
+   `AnimatePresence` existed here to animate the drawer *out* — the reason a
+   plain conditional render cannot do this is that the element is gone from the
+   tree before it can transition.
+
+   So the drawer stays mounted and flips `data-open`. That buys the exit
+   transition for free and costs nothing while closed: `visibility: hidden`
+   takes it out of hit-testing and the accessibility tree, and `inert` on the
+   container takes its links out of the tab order. The delayed `visibility`
+   transition is what lets the panel finish sliding before it is hidden.
+   ========================================================================= */
+
+.kp-drawer {
+  visibility: hidden;
+  transition: visibility 0s linear 0.45s;
+}
+
+.kp-drawer[data-open="true"] {
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.kp-drawer-scrim {
+  opacity: 0;
+  transition: opacity 0.25s var(--ease-out-quint);
+}
+
+.kp-drawer[data-open="true"] .kp-drawer-scrim {
+  opacity: 1;
+}
+
+.kp-drawer-panel {
+  /* RTL: the panel lives on the right edge and leaves through it. */
+  transform: translateX(100%);
+  transition: transform 0.45s var(--ease-out-expo);
+}
+
+.kp-drawer[data-open="true"] .kp-drawer-panel {
+  transform: none;
+}
+
+/* =========================================================================
+   Mobile drawer — the nav items arrive one after another
+   -------------------------------------------------------------------------
+   Same reasoning as the reveals above, and it matters more here than
+   anywhere else on the page: this runs at the exact moment the drawer is
+   sliding and the scrim is fading, so six JavaScript-driven animations were
+   competing with the two that actually carry the interaction.
+
+   A keyframe rather than a transition because there is no previous state to
+   transition from — a transition would need a state flip a frame after the
+   drawer opens to fire at all.
+
+   The selector is gated on `data-open` because the drawer is now permanently
+   mounted (see above). Ungated, the stagger would play through once against a
+   hidden drawer on first paint and every later open would be inert.
+   ========================================================================= */
+
+@keyframes kp-drawer-item {
+  from {
+    opacity: 0;
+    /* RTL: the items come in from the edge the drawer opens from. */
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.kp-drawer[data-open="true"] .kp-drawer-item {
+  animation: kp-drawer-item 0.42s var(--ease-out-expo) var(--kp-delay, 0s) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kp-drawer[data-open="true"] .kp-drawer-item {
+    animation: none;
+  }
+}
+
+/* =========================================================================
    Hero mockup — arrives once, then sits still
    ========================================================================= */
 
@@ -718,6 +846,167 @@
     animation: none;
     stroke-dasharray: none;
   }
+}
+
+/* =========================================================================
+   Interaction and status vocabulary
+   -------------------------------------------------------------------------
+   The last four sections that imported an animation library — the player, the
+   lead form and the two API-backed rails — used it for exactly these gestures:
+   a hover nudge, a press, a knob that slides, and a handful of elements that
+   fade in when they appear. None of that needs a library, and between them they
+   were what kept `motion` on the home page after the header stopped needing it.
+
+   Hover and press rules are gated on `:not(:disabled)` because every one of
+   these sits on a control that has a disabled state — an unavailable voice, a
+   dead Play button, a form mid-submit.
+   ========================================================================= */
+
+/* These three all sit on controls that also change colour on hover or state.
+   They carry the colour transition themselves rather than leaning on Tailwind's
+   `transition-colors`: these rules are unlayered and the utility is not, so a
+   bare `transition: transform` here would win the cascade and silently drop the
+   colour fade the control already had. */
+
+/* Hover nudge for the voice and recommendation rows. RTL: toward the start
+   edge, which is the direction the row's content reads from. */
+.kp-nudge {
+  transition:
+    transform 0.3s var(--ease-out-quint),
+    background-color 0.2s var(--ease-out-quint),
+    color 0.2s var(--ease-out-quint);
+}
+.kp-nudge:hover:not(:disabled) {
+  transform: translateX(-4px);
+}
+
+/* The player's transport button — the one control on the page big enough that
+   a scale reads better on it than a lift. */
+.kp-press {
+  transition:
+    transform 0.25s var(--ease-out-quint),
+    background-color 0.2s var(--ease-out-quint),
+    color 0.2s var(--ease-out-quint);
+}
+.kp-press:hover:not(:disabled) {
+  transform: scale(1.06);
+}
+.kp-press:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+/* Interest tags in the lead form: press only, no hover displacement — they sit
+   in a dense wrapped grid where a lift would make the rows jitter. */
+.kp-tap {
+  transition:
+    transform 0.2s var(--ease-out-quint),
+    background-color 0.2s var(--ease-out-quint),
+    border-color 0.2s var(--ease-out-quint),
+    color 0.2s var(--ease-out-quint);
+}
+.kp-tap:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+/* Kids-mode switch knob. RTL: travels toward the start edge when on. */
+.kp-knob {
+  transition: transform 0.3s var(--ease-out-quint);
+}
+.kp-knob[data-on="true"] {
+  transform: translateX(-20px);
+}
+
+/* Status copy that appears in place: player errors, field errors, the form's
+   server error. All of them arrive, none of them leave with an animation. */
+@keyframes kp-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.kp-pop-in {
+  animation: kp-pop-in 0.3s var(--ease-out-expo) both;
+}
+
+/* The lead form's two terminal states swap for the form itself. This is the one
+   place `AnimatePresence` was doing something CSS cannot copy exactly — the
+   outgoing panel used to fade out before the incoming one arrived. It is now a
+   straight swap with an entrance, which is invisible in practice because the
+   swap only ever follows a network round trip the reader has already waited on. */
+@keyframes kp-result-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.kp-result-in {
+  animation: kp-result-in 0.45s var(--ease-out-expo) both;
+}
+
+@keyframes kp-badge-in {
+  from {
+    transform: scale(0.6) rotate(-20deg);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.kp-badge-in {
+  animation: kp-badge-in 0.5s var(--ease-out-quint) both;
+}
+
+@keyframes kp-form-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.kp-form-in {
+  animation: kp-form-in 0.35s linear both;
+}
+
+/* The check inside the consent box and the interest tags.
+ *
+ * A keyframe on a conditionally-rendered element rather than a transition on a
+ * permanent one: the interest tag's check sits inside a flex row, so a check
+ * that is always present — merely scaled to nothing — would still reserve its
+ * width and push every label sideways in the resting state. */
+@keyframes kp-check-in {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.kp-check-in {
+  animation: kp-check-in 0.22s var(--ease-out-quint) both;
+}
+
+/* The demo's continue-listening bar. Same idea as `.kp-progress-in`, but the
+   width is data-driven so it is set inline and only the transition lives here. */
+.kp-bar-fill {
+  width: 0;
+  transition: width 0.9s var(--ease-out-expo);
+}
+.kp-shown .kp-bar-fill,
+[data-shown="true"] .kp-bar-fill {
+  width: var(--kp-fill, 0%);
 }
 
 /* =========================================================================

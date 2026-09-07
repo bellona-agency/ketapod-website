@@ -1,15 +1,13 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Check, ChevronDown, Loader2, PartyPopper, TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AssetSlot, Float } from "@/components/primitives/AssetSlot";
 import { asset } from "@/lib/assets";
+import { Reveal } from "@/components/primitives/Reveal";
 import { SectionHeading } from "@/components/primitives/SectionHeading";
 import { Waveform } from "@/components/primitives/Waveform";
 import {
-  FALLBACK_LEAD_OPTIONS,
-  getLeadOptions,
   readUtm,
   submitLead,
   trackEvent,
@@ -17,7 +15,6 @@ import {
 } from "@/lib/api";
 import { LEAD_FORM_COPY } from "@/lib/content";
 import { onLeadIntent, type LeadIntent } from "@/lib/leadIntent";
-import { EASE_OUT_EXPO, springSoft } from "@/lib/motion";
 import { cn, toLatinDigits } from "@/lib/utils";
 
 type Errors = Partial<Record<string, string>>;
@@ -36,10 +33,13 @@ const PHONE_RE = /^(?:\+98|0098|0)9\d{9}$/;
  * Client-side validation mirrors the server rules from the spec so the user
  * isn't taught them by a round trip, and 422 responses still map back onto the
  * fields. The section also listens for a preset from the Kids CTA.
+ *
+ * The select options arrive as a prop from the server. They used to be fetched
+ * on mount, which meant the form's dropdowns were briefly populated from the
+ * fallback list — on a slow API, long enough for someone to open one and pick
+ * from the wrong set.
  */
-export function LeadForm() {
-  const prefersReduced = useReducedMotion();
-  const [options, setOptions] = useState<LeadOptions>(FALLBACK_LEAD_OPTIONS);
+export function LeadForm({ options }: { options: LeadOptions }) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [errors, setErrors] = useState<Errors>({});
   const [serverMessage, setServerMessage] = useState<string | null>(null);
@@ -56,14 +56,6 @@ export function LeadForm() {
     interestTags: [] as string[],
     consent: false,
   });
-
-  useEffect(() => {
-    const ac = new AbortController();
-    getLeadOptions(ac.signal).then((o) => {
-      if (!ac.signal.aborted && o) setOptions(o);
-    });
-    return () => ac.abort();
-  }, []);
 
   /**
    * Apply a preset: user type, plus a first interest if none is chosen.
@@ -239,19 +231,18 @@ export function LeadForm() {
                   "پیشنهادهای متناسب با سلیقه‌ات",
                   "خبر انتشار محتوای کودک و بومی",
                 ].map((t, i) => (
-                  <motion.li
+                  <Reveal
                     key={t}
+                    as="li"
+                    v="inline"
+                    delay={0.1 * i}
                     className="flex items-center gap-3 text-[17px] text-white/90"
-                    initial={{ opacity: 0, x: 20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ ...springSoft, delay: 0.1 * i }}
                   >
                     <span className="grid size-6 shrink-0 place-items-center rounded-full bg-white/20">
                       <Check className="size-3.5" strokeWidth={2.5} aria-hidden />
                     </span>
                     {t}
-                  </motion.li>
+                  </Reveal>
                 ))}
               </ul>
 
@@ -278,30 +269,24 @@ export function LeadForm() {
 
           {/* ── Form panel ─────────────────────────────────────── */}
           <div className="px-4 py-9 sm:px-8 md:px-10 md:py-12">
-            <AnimatePresence mode="wait">
-              {phase === "success" || phase === "duplicate" ? (
-                <motion.div
-                  key="result"
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.45, ease: EASE_OUT_EXPO }}
-                  className="flex min-h-[420px] flex-col items-center justify-center text-center"
-                  role="status"
+            {/* The two terminal states and the form swap in place. This was an
+                `AnimatePresence mode="wait"`; see `.kp-result-in` for what the
+                swap gives up and why it does not show. */}
+            {phase === "success" || phase === "duplicate" ? (
+              <div
+                className="kp-result-in flex min-h-[420px] flex-col items-center justify-center text-center"
+                role="status"
+              >
+                <span
+                  className={cn(
+                    "kp-badge-in grid size-16 place-items-center rounded-full",
+                    phase === "success"
+                      ? "bg-mint-100 text-mint"
+                      : "bg-amber-100 text-amber",
+                  )}
                 >
-                  <motion.span
-                    className={cn(
-                      "grid size-16 place-items-center rounded-full",
-                      phase === "success"
-                        ? "bg-mint-100 text-mint"
-                        : "bg-amber-100 text-amber",
-                    )}
-                    initial={{ scale: 0.6, rotate: -20 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    transition={springSoft}
-                  >
-                    <PartyPopper className="size-7" strokeWidth={1.7} aria-hidden />
-                  </motion.span>
+                  <PartyPopper className="size-7" strokeWidth={1.7} aria-hidden />
+                </span>
                   <h3 className="mt-6 text-[25px] font-bold text-ink">
                     {phase === "success"
                       ? LEAD_FORM_COPY.successTitle
@@ -319,18 +304,13 @@ export function LeadForm() {
                   >
                     ثبت اطلاعات دیگر
                   </button>
-                </motion.div>
-              ) : (
-                <motion.form
-                  key="form"
-                  onSubmit={handleSubmit}
-                  noValidate
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0, y: -12 }}
-                  transition={{ duration: 0.35 }}
-                  className="flex flex-col gap-5"
-                >
+              </div>
+            ) : (
+              <form
+                onSubmit={handleSubmit}
+                noValidate
+                className="kp-form-in flex flex-col gap-5"
+              >
                   <Field
                     id="fullName"
                     label="نام و نام خانوادگی"
@@ -429,33 +409,25 @@ export function LeadForm() {
                       {options.interestTags.map((tag) => {
                         const on = form.interestTags.includes(tag.value);
                         return (
-                          <motion.button
+                          <button
                             key={tag.value}
                             type="button"
                             onClick={() => toggleInterest(tag.value)}
                             aria-pressed={on}
-                            whileTap={prefersReduced ? undefined : { scale: 0.95 }}
                             className={cn(
-                              "flex cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-2 text-[16px] transition-colors duration-200",
+                              "kp-tap flex cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-2 text-[16px]",
                               on
                                 ? "border-violet bg-violet text-white"
                                 : "border-line-2 text-ink-2 hover:border-violet hover:text-violet",
                             )}
                           >
-                            <AnimatePresence initial={false}>
-                              {on && (
-                                <motion.span
-                                  initial={{ width: 0, opacity: 0 }}
-                                  animate={{ width: 14, opacity: 1 }}
-                                  exit={{ width: 0, opacity: 0 }}
-                                  className="overflow-hidden"
-                                >
-                                  <Check className="size-3.5" strokeWidth={3} aria-hidden />
-                                </motion.span>
-                              )}
-                            </AnimatePresence>
+                            {on && (
+                              <span className="kp-check-in">
+                                <Check className="size-3.5" strokeWidth={3} aria-hidden />
+                              </span>
+                            )}
                             {tag.label}
-                          </motion.button>
+                          </button>
                         );
                       })}
                     </div>
@@ -486,18 +458,11 @@ export function LeadForm() {
                             "peer-focus-visible:ring-4 peer-focus-visible:ring-violet-100",
                           )}
                         >
-                          <AnimatePresence>
-                            {form.consent && (
-                              <motion.span
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                exit={{ scale: 0 }}
-                                transition={springSoft}
-                              >
-                                <Check className="size-3" strokeWidth={3.5} aria-hidden />
-                              </motion.span>
-                            )}
-                          </AnimatePresence>
+                          {form.consent && (
+                            <span className="kp-check-in">
+                              <Check className="size-3" strokeWidth={3.5} aria-hidden />
+                            </span>
+                          )}
                         </span>
                       </span>
                       <span className="text-[16px] leading-relaxed text-ink-2">
@@ -508,30 +473,29 @@ export function LeadForm() {
                   </div>
 
                   {phase === "error" && (
-                    <motion.p
-                      initial={{ opacity: 0, y: -6 }}
-                      animate={{ opacity: 1, y: 0 }}
+                    <p
                       role="alert"
-                      className="flex items-center gap-2 rounded-sm bg-rose-100 px-3.5 py-3 text-[16px] text-rose-ink"
+                      className="kp-pop-in flex items-center gap-2 rounded-sm bg-rose-100 px-3.5 py-3 text-[16px] text-rose-ink"
                     >
                       <TriangleAlert className="size-4 shrink-0" strokeWidth={1.9} aria-hidden />
                       {serverMessage ?? LEAD_FORM_COPY.errorBody}
-                    </motion.p>
+                    </p>
                   )}
 
-                  <motion.button
+                  {/* `.btn` already carries this page's lift-and-press. The
+                      motion version was re-implementing it with different
+                      numbers, which is why the submit button used to react
+                      slightly differently from every other CTA. */}
+                  <button
                     type="submit"
                     disabled={busy}
                     className="btn btn-violet mt-2 h-[60px] min-h-[60px] w-full text-[19px]"
-                    whileHover={prefersReduced || busy ? undefined : { y: -2 }}
-                    whileTap={prefersReduced || busy ? undefined : { scale: 0.98 }}
                   >
                     {busy && <Loader2 className="size-4 animate-spin" strokeWidth={2.2} />}
                     {busy ? LEAD_FORM_COPY.submitting : LEAD_FORM_COPY.submit}
-                  </motion.button>
-                </motion.form>
-              )}
-            </AnimatePresence>
+                  </button>
+              </form>
+            )}
           </div>
         </div>
       </div>
@@ -572,14 +536,9 @@ function Field({
 
 function FieldError({ children }: { children: React.ReactNode }) {
   return (
-    <motion.p
-      initial={{ opacity: 0, y: -4 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="mt-1.5 text-[15px] text-rose"
-      role="alert"
-    >
+    <p className="kp-pop-in mt-1.5 text-[15px] text-rose" role="alert">
       {children}
-    </motion.p>
+    </p>
   );
 }
 
