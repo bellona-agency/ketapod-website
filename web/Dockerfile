@@ -3,10 +3,26 @@
 # ── dependencies ─────────────────────────────────────────────────────────
 FROM node:22-alpine AS deps
 WORKDIR /app
+# Same story as the Go image: on this team's connection the install dies
+# partway through with ECONNRESET often enough that one attempt is not a
+# build step. npm's own retry settings handle a single flaky request; the
+# loop handles the whole install falling over. The registry is an argument
+# because which mirror works depends on where you are sitting.
+ARG NPM_REGISTRY=https://registry.npmjs.org
+
 COPY package.json package-lock.json ./
+
 # `npm ci` installs exactly the lockfile, which is the point of having one.
 # No BuildKit cache mount: this has to build on a plain docker daemon too.
-RUN npm ci
+RUN npm config set registry "$NPM_REGISTRY" \
+    && npm config set fetch-retries 5 \
+    && npm config set fetch-retry-maxtimeout 120000 \
+    && for attempt in 1 2 3 4 5; do \
+           npm ci && break; \
+           echo "npm ci failed (attempt $attempt), retrying..."; \
+           sleep 5; \
+       done; \
+    npm ci
 
 # ── build ────────────────────────────────────────────────────────────────
 FROM node:22-alpine AS build

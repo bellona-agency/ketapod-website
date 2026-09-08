@@ -170,6 +170,7 @@ services:
     build:
       context: ./web
       args:
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org}
         # مرورگر است که این آدرس را صدا می‌زند، نه کانتینر وب — پس
         # localhost درست است و `api` غلط: نام سرویس فقط داخل شبکه داکر
         # معنی دارد.
