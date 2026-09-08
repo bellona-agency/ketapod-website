@@ -1,155 +1,76 @@
-# کتاپاد — وب عمومی
+# کتاپاد
 
-پیاده‌سازی سطح **وب عمومی** از سند فنی تفکیک قابلیت‌ها (نسخه ۱).
-Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 · Motion · Lucide
+پلتفرم کتاب صوتی هوشمند فارسی — بک‌اند Go، وب Next.js، و سرویس هوش مصنوعی
+همکار که روی **همان دیتابیس** کار می‌کند.
+
+```
+backend/   هسته Go — API، worker، scheduler، مهاجرت‌ها
+web/       وب عمومی Next.js + پنل تولید محتوا
+docs/      کل زمینه پروژه — از اینجا شروع کن
+design/    بوم طراحی
+```
+
+## بالا آوردن کل پروژه
 
 ```bash
-npm run dev
+cp .env.example .env
+docker compose --profile app up -d --build
 ```
 
----
+| سرویس | آدرس |
+|---|---|
+| وب | http://localhost:3000 |
+| پنل تولید محتوا | http://localhost:3000/admin/books |
+| API | http://localhost:8080/api/v1 |
+| کنسول MinIO | http://localhost:9001 |
 
-## ۱. دامنه‌ی این کدبیس
-
-سند فنی برای وب سه سطح تعریف کرده و این ریپو **سطح اول** را می‌سازد:
-
-| سطح | وضعیت | کدبیس |
-|-----|-------|-------|
-| وب عمومی — لندینگ، کاتالوگ، صفحه کتاب، گوینده، دسته، گویش، `/ai`، `/kids`، بلاگ | ✅ اینجا | این ریپو |
-| وب‌اپ کاربر — کتابخانه، پخش‌کننده، کیف پول، یادداشت، پروفایل | ⬜ ساخته نشده | همین ریپو، پشت لاگین |
-| پنل والد | ⬜ ساخته نشده | همین ریپو، بخشی از وب‌اپ |
-| استودیو / ناشر / سازمان / ادمین | ⬜ ساخته نشده | Refine، ریپوی جدا |
-
-قاعده‌ای که رعایت شده: **هیچ منطق کسب‌وکاری در فرانت نیست.** قیمت، سطح‌بندی، سیاست کودک و
-`Entitlement` همه در بک‌اند محاسبه می‌شوند؛ اینجا فقط نمایش است.
-
----
-
-## ۲. مسیرها
-
-همه SSG هستند و از `generateStaticParams` تولید می‌شوند.
-
-| مسیر | فایل | ساختار داده |
-|------|------|-------------|
-| `/` | `app/page.tsx` | لندینگ — ۱۲ سکشن، تنها جایی که فرم لید دارد |
-| `/books` | `app/books/page.tsx` | هاب کاتالوگ — **کاملاً استاتیک** |
-| `/search` | `app/search/page.tsx` | تنها مسیر داینامیک سایت · `noIndex` + بلاک در robots |
-| `/book/[slug]` | `app/book/[slug]/page.tsx` | `schema.org/Audiobook` + `Review` + `AggregateRating` |
-| `/category/[slug]` | `app/category/[slug]/page.tsx` | — |
-| `/author/[slug]` | `app/author/[slug]/page.tsx` | `schema.org/Person` |
-| `/publisher/[slug]` | `app/publisher/[slug]/page.tsx` | `schema.org/Organization` |
-| `/collection/[slug]` | `app/collection/[slug]/page.tsx` | `schema.org/ItemList` — مسیر مطالعه، ترتیب‌دار |
-| `/voices` · `/voice/[slug]` | `app/voices/`, `app/voice/[slug]/` | `schema.org/Person` فقط برای گوینده انسانی |
-| `/dialects` · `/dialect/[slug]` | `app/dialects/`, `app/dialect/[slug]/` | صفحه فرود مستقل هر گویش |
-| `/kids` | `app/kids/page.tsx` | صفحه فرود والد — مستقل، نه تبلیغ اپ |
-| `/ai` | `app/ai/page.tsx` | کتاب‌یار — چند پرسش رایگان، سپس گیت لید |
-| `/blog` · `/blog/[slug]` | `app/blog/` | `schema.org/BlogPosting` |
-| `/privacy` · `/terms` | `app/privacy/`, `app/terms/` | placeholder «در حال تدوین» · `noIndex` |
-| `/sitemap.xml` · `/robots.txt` | `app/sitemap.ts`, `app/robots.ts` | از روی کاتالوگ ساخته می‌شوند |
-
-- **ناوبری** در [`src/lib/routes.ts`](src/lib/routes.ts) است — نه در کامپوننت‌ها. برای اضافه‌کردن
-  مسیر جدید، فقط همان‌جا. `sitemap.ts` هم از همان می‌خواند.
-- **Header و Footer** در `app/layout.tsx` هستند، نه در صفحه‌ها.
-
----
-
-## ۳. مدل داده
-
-[`src/lib/catalog/`](src/lib/catalog) — تایپ‌ها در `types.ts`، داده seed در `data.ts`، کوئری‌ها در
-`index.ts`.
-
-تفکیکی که همه‌چیز روی آن سوار است:
-
-```
-Book          اثر انتزاعی — عنوان، نویسنده، ناشر.  هیچ فایل صوتی اینجا نیست.
-AudioEdition  یک اجرا از آن اثر — voiceId، گویش، نوع گوینده، قیمت مستقل، is_kids_friendly
-```
-
-بدون این تفکیک، هیچ‌کدام از این‌ها ممکن نیست: نسخه گویشی، نسخه کودک، نسخه انسانی کنار نسخه
-هوش مصنوعی، و بازارگاه صدا. صفحه کتاب دقیقاً همین را نشان می‌دهد و انتخابگر نسخه قلب آن صفحه است.
-
-**قرارداد شناسه صدا** (`voices[].id == sources[].voiceId`) در یک تابع اعمال می‌شود:
-`getVoice(voiceId)`. صفحه کتاب نسخه‌ها را **سمت سرور** resolve می‌کند و flat به کلاینت می‌دهد،
-پس `EditionPicker` اصلاً `voiceId` نمی‌بیند و نمی‌تواند گوینده‌ای بدون منبع متناظر رندر کند.
-
-هر تابع در `index.ts` یک **درز** است: وقتی هسته Go آمد، هرکدام یک fetch روی `openapi.yaml`
-می‌شود با همین seed به‌عنوان fallback — و هیچ صفحه‌ای تغییر شکل نمی‌دهد.
-
----
-
-## ۴. SEO
-
-- **متادیتا** فقط از `pageMetadata()` در [`src/lib/seo.tsx`](src/lib/seo.tsx). canonical، Open Graph
-  و ترکیب عنوان یک جا تصمیم گرفته می‌شوند.
-- **breadcrumb** یک بار نوشته می‌شود و هم HTML و هم JSON-LD از همان آرایه ساخته می‌شوند، پس
-  نمی‌توانند با هم اختلاف پیدا کنند.
-- **ترنسکریپت** روی صفحه کتاب منتشر می‌شود. سند این را «پرارزش‌ترین دارایی فنی پروژه» می‌نامد؛
-  یک ساختار، چهار کاربرد — و این صفحه کاربرد «متن ایندکس‌پذیر» را برمی‌دارد.
-- **خلاصه کتاب** هم عمداً عمومی است. متن رایگان و یکتا درباره هر کتاب.
-- **جست‌وجو مسیر جدا دارد** (`/search`)، نه `?q=` روی `/books`. صفحه‌ای که `searchParams`
-  می‌خواند برای هر بازدیدکننده server-render می‌شود؛ با ماندنش روی `/books`، هابِ کاتالوگ —
-  پربازدیدترین صفحه پس از لندینگ — HTML استاتیکش را از دست می‌داد. `/search` هم `noIndex` است
-  هم در `robots.txt` بلاک، چون هزاران نسخه تقریباً یکسان از کاتالوگ با خود `/books` رقابت می‌کنند.
-- **قیمت در JSON-LD به ریال** است چون `IRR` یعنی ریال. صفحه تومان نشان می‌دهد.
-
----
-
-## ۵. اتصال به بک‌اند
+داده نمونه (کتاب‌ها، گوینده‌ها، کلیپ‌های صوتی):
 
 ```bash
-# .env.local
-NEXT_PUBLIC_API_BASE_URL=https://api.ketapod.ir
+docker compose --profile seed up seed
 ```
 
-- **هر سکشن مستقل fail می‌شود.** خطای یک endpoint باعث page-level failure نمی‌شود.
-- **Trust Strip / Localization / Social Proof / Lead options** با داده fallback رندر می‌شوند و با
-  رسیدن پاسخ جایگزین می‌شوند — بدون skeleton و بدون reflow.
-- **Interactive Demo پخش واقعی دارد.** یک `<audio>` تنها منبع حقیقت برای `isPlaying` و progress است.
-- **جست‌وجوی کاتالوگ** یک فرم GET ساده است، نه فیلتر کلاینتی: نتیجه یک URL واقعی است، بدون
-  جاوااسکریپت هم کار می‌کند، و صفحه server component می‌ماند. با آمدن Meilisearch فقط
-  `searchBooks` عوض می‌شود.
-- **قصد لید بین صفحه‌ها** از طریق URL منتقل می‌شود (`/?lead_u=parent&lead_i=kids#lead-form`).
-  broadcast قبلی فقط وقتی کار می‌کرد که فرم از قبل mount شده باشد — که از `/kids` درست نیست.
+مهاجرت‌ها خودشان قبل از بالا آمدن API اجرا می‌شوند؛ `api` و `worker` منتظر
+تمام‌شدن موفق `migrate` می‌مانند.
 
----
+## توسعه محلی بدون داکر
 
-## ۶. دیزاین سیستم
+`docker compose up -d` بدون profile فقط زیرساخت (Postgres، Redis، MinIO) را
+بالا می‌آورد و Go و Next را روی ماشین خودت اجرا می‌کنی:
 
-توکن‌ها در [`src/app/globals.css`](src/app/globals.css) با `@theme`. **دست‌نخورده مانده‌اند** —
-صفحه‌های جدید از همان `.card` / `.panel` / `.chip` / `.section-rhythm` / `.rail-bleed` استفاده
-می‌کنند.
+```bash
+cd backend && cp .env.example .env && make migrate-up && make seed
+make run-api      # :8080
+make run-worker   # در ترمینال جدا
+make run-scheduler
+```
 
-- **کانسپت:** «کاغذ و موج» — کاغذ سرد روی هیو لوگو، تایپ جوهری، آبی الکتریک، موتیف موج.
-- **رنگ:** `paper #F7F8FC` · `ink #13141D` · `violet #2A38FF` · `night #0B0D2A`
-- **تایپوگرافی:** IRANYekan برای همه‌چیز؛ لاتین و اعداد را هم خودش می‌آورد.
-- **`PageHeader`** ماستهد مشترک همه صفحات غیر از لندینگ است — فاصله از هدر ثابت، مقیاس `h1` و
-  عرض lead یک بار تصمیم گرفته شده‌اند، نه سیزده بار.
-- **شماره‌گذاری سکشن‌ها** در لندینگ پیوسته است (۰۱ تا ۱۱). با اضافه یا کم کردن سکشن باید
-  دستی renumber شود.
+```bash
+cd web && cp .env.example .env.local && npm install && npm run dev   # :3000
+```
 
-> ⚠️ سند می‌گوید توکن‌ها باید از یک `tokens.json` مشترک، هم `tailwind.config` و هم `ThemeData`
-> فلاتر تولید کنند. این کار **انجام نشده** و وقتی پروژه فلاتر شروع شد باید انجام شود، وگرنه وب و
-> اپ ظرف چند ماه واگرا می‌شوند.
+## دیتابیس مشترک با سرویس AI
 
----
+از مهاجرت `00014` جدول‌های سرویس AI در schema `public` همین دیتابیس‌اند؛ آن
+سرویس فقط `DATABASE_URL` را به `ketapod` می‌دهد. قاعده مالکیت (goose مالک
+schemaهای ما، alembic مالک `public`) و قرارداد تحویل کار در
+[`docs/10-ai-pipeline.md`](docs/10-ai-pipeline.md).
 
-## ۷. وضعیت بررسی
+مسیر کامل یک کتاب: آپلود در پنل → ذخیره در دیتابیس و object storage → تحویل به
+سرویس AI → OCR و پردازش متن و خلاصه → TTS → ساخت خودکار AudioEdition در
+کاتالوگ → قابل پخش در سایت.
 
-- `npx tsc --noEmit` — پاک
-- `npx eslint .` — پاک
-- `npm run build` — ۶۳ صفحه؛ فقط `/search` داینامیک، بقیه استاتیک
-- crawl کامل روی build production — ۵۸ مسیر داخلی، همه ۲۰۰، بدون لینک شکسته
+## تست
 
-باگ‌هایی که حین بازطراحی پیدا و اصلاح شدند:
+```bash
+cd backend && make test-unit && make test-contract
+```
 
-- `trackEvent` همه ایونت‌ها را `page: "home"` برچسب می‌زد. با چندصفحه‌ای شدن، هر ایونت از صفحه
-  کتاب یا کودک خودش را رویداد صفحه اصلی گزارش می‌کرد.
-- عنوان صفحه‌ها دوبار برند می‌گرفت (`… | کتاپاد | کتاپاد`) چون قالب layout روی خروجی
-  `pageMetadata` هم اجرا می‌شد. حالا `title.absolute` قالب را دور می‌زند.
-- قصد لید از `/kids` و `/ai` گم می‌شد: broadcast فقط وقتی کار می‌کرد که فرم از قبل mount باشد.
-  کانال حالا آخرین intent را نگه می‌دارد و هنگام subscribe پخش می‌کند.
-- `/privacy` و `/terms` در فوتر بودند ولی هیچ‌وقت ساخته نشده بودند — دو لینک ۴۰۴ روی
-  **هر ۵۸ صفحه**. حالا placeholder دارند و مسیرشان از `routes.ts` می‌آید تا دوباره جدا نیفتند.
+```bash
+cd web && npx tsc --noEmit && npx eslint . && npm run build
+```
 
-> ⚠️ Node روی این ماشین در `C:\Users\navid\tools\node` نصب شده (نسخه portable، بدون ادمین) و به
-> PATH کاربر اضافه شده است.
+## مستندات
+
+`docs/README.md` نقشه راه است. برای شروع: `01-context.md`، بعد
+`04-architecture.md` (بک‌اند) یا `06-frontend.md` (فرانت).

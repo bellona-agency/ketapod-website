@@ -1,41 +1,26 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# ── secrets ──────────────────────────────────────────────────────────────
+# .env دارد کلید ادمین، JWT secret و رمز object storage. مقادیر نمونه در
+# .env.example هستند و همان‌ها commit می‌شوند.
+.env
+.env.local
+*.env.local
+backend/.env
+web/.env.local
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
+# ── build output ─────────────────────────────────────────────────────────
+node_modules/
+web/.next/
+web/out/
+web/next-env.d.ts
 
-# testing
-/coverage
+# باینری‌های Go
+backend/bin/
+backend/api
+backend/worker
+backend/scheduler
 
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
+# ── ابزار ─────────────────────────────────────────────────────────────────
 .DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+*.log
+.idea/
+.vscode/

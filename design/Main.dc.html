@@ -1,0 +1,718 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Vazirmatn', Tahoma, 'Segoe UI', sans-serif; direction: rtl; background: #F4EFE3; }
+    a { color: #0E8C8C; text-decoration: none; } a:hover { color: #075E63; }
+    * { box-sizing: border-box; }
+  </style>
+</helmet>
+
+<div style="background: #F4EFE3; color: #1E2A2E;">
+
+<!-- 1 HEADER -->
+<div style="display: flex; align-items: center; gap: 40px; padding: 18px 60px; background: #F4EFE3; border-bottom: 1px solid #E4DCC9;">
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <svg width="26" height="29" viewBox="0 0 100 110"><path d="M0,110 V46 Q0,6 50,0 Q100,6 100,46 V110 Z" fill="{{accent}}"></path><circle cx="50" cy="62" r="15" fill="#F4EFE3"></circle></svg>
+    <strong style="font-size: 21px; font-weight: 900; letter-spacing: -0.02em;">کتاپاد</strong>
+  </div>
+  <div style="display: flex; gap: 26px; align-items: center; flex-grow: 1;">
+    <a href="#" style="font-size: 14.5px; color: #4E5F63; font-weight: 500;">امکانات</a>
+    <a href="#" style="font-size: 14.5px; color: #4E5F63; font-weight: 500;">دمو محصول</a>
+    <a href="#" style="font-size: 14.5px; color: #4E5F63; font-weight: 500;">کودک</a>
+    <a href="#" style="font-size: 14.5px; color: #4E5F63; font-weight: 500;">زبان‌ها و فرهنگ‌ها</a>
+    <a href="#" style="font-size: 14.5px; color: #4E5F63; font-weight: 500;">سوالات متداول</a>
+    <a href="#" style="font-size: 14.5px; color: #4E5F63; font-weight: 500;">شروع</a>
+  </div>
+  <span style="background: {{accent}}; color: #FFFFFF; padding: 11px 26px; border-radius: 100px; font-size: 14.5px; font-weight: 700;">رایگان گوش کن</span>
+</div>
+
+<!-- 2 HERO -->
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px; align-items: center; padding: 72px 60px 80px;">
+  <div style="display: flex; flex-direction: column; gap: 22px;">
+    <span style="align-self: flex-start; background: #DCEFEE; color: #075E63; padding: 7px 16px; border-radius: 100px; font-size: 12.5px; font-weight: 700; letter-spacing: 0.04em;">پلتفرم کتاب صوتی هوشمند</span>
+    <h1 style="margin: 0; font-size: 52px; line-height: 1.28; font-weight: 900; letter-spacing: -0.03em; text-wrap: balance;">کتاب صوتی هوشمند، متناسب با هر شنونده</h1>
+    <p style="margin: 0; font-size: 17.5px; line-height: 1.85; color: #4E5F63; max-width: 46ch;">پیشنهادهای هوشمند، تجربه شنیداری تعاملی، حالت کودک و انتخاب صدا در یک تجربه یکپارچه.</p>
+    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+      <span style="background: {{accent}}; color: #FFFFFF; padding: 15px 34px; border-radius: 100px; font-size: 16px; font-weight: 700;">رایگان گوش کن</span>
+      <span style="border: 1.5px solid #C9BFA8; color: #1E2A2E; padding: 14px 30px; border-radius: 100px; font-size: 16px; font-weight: 600;">مشاهده دمو</span>
+    </div>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
+      <span style="background: #EAE3D2; color: #4E5F63; padding: 6px 14px; border-radius: 100px; font-size: 12.5px; font-weight: 600;">شخصی‌سازی‌شده</span>
+      <span style="background: #EAE3D2; color: #4E5F63; padding: 6px 14px; border-radius: 100px; font-size: 12.5px; font-weight: 600;">مناسب کودک</span>
+      <span style="background: #EAE3D2; color: #4E5F63; padding: 6px 14px; border-radius: 100px; font-size: 12.5px; font-weight: 600;">چندزبانه</span>
+      <span style="background: #EAE3D2; color: #4E5F63; padding: 6px 14px; border-radius: 100px; font-size: 12.5px; font-weight: 600;">تعاملی</span>
+    </div>
+  </div>
+
+  <div style="background: #FFFFFF; border: 1px solid #E4DCC9; border-radius: 28px; padding: 28px; display: flex; flex-direction: column; gap: 20px;">
+    <div style="display: flex; gap: 18px; align-items: flex-end;">
+      <div style="width: 132px; height: 168px; background: #075E63; border-radius: 66px 66px 14px 14px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 18px; flex: none;">
+        <svg width="58" height="64" viewBox="0 0 100 110"><path d="M0,110 V46 Q0,6 50,0 Q100,6 100,46 V110 Z" fill="#7FCFCB"></path><circle cx="34" cy="52" r="4.5" fill="#075E63"></circle><circle cx="66" cy="52" r="4.5" fill="#075E63"></circle><path d="M36,74 Q50,82 64,74" stroke="#075E63" stroke-width="4" fill="none" stroke-linecap="round"></path></svg>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 7px; flex-grow: 1;">
+        <span style="font-size: 11.5px; color: #0E8C8C; font-weight: 700; letter-spacing: 0.1em;">در حال پخش</span>
+        <strong style="font-size: 21px; font-weight: 800; line-height: 1.4;">قصه‌های شب</strong>
+        <span style="font-size: 13.5px; color: #6B767A;">با صدای آرام</span>
+      </div>
+    </div>
+    <div style="display: flex; align-items: flex-end; gap: 3px; height: 46px;">
+      <div style="flex-grow: 1; height: 30%; background: #0E8C8C; border-radius: 2px;"></div>
+      <div style="flex-grow: 1; height: 62%; background: #0E8C8C; border-radius: 2px;"></div>
+      <div style="flex-grow: 1; height: 88%; background: #0E8C8C; border-radius: 2px;"></div>
+      <div style="flex-grow: 1; height: 46%; background: #0E8C8C; border-radius: 2px;"></div>
+      <div style="flex-grow: 1; height: 74%; background: #0E8C8C; border-radius: 2px;"></div>
+      <div style="flex-grow: 1; height: 34%; background: #0E8C8C; border-radius: 2px;"></div>
+      <div style="flex-grow: 1; height: 92%; background: #0E8C8C; border-radius: 2px;"></div>
+      <div style="flex-grow: 1; height: 52%; background: #0E8C8C; border-radius: 2px;"></div>
+      <div style="flex-grow: 1; height: 68%; background: #C9BFA8; border-radius: 2px;"></div>
+      <div style="flex-grow: 1; height: 28%; background: #C9BFA8; border-radius: 2px;"></div>
+      <div style="flex-grow: 1; height: 56%; background: #C9BFA8; border-radius: 2px;"></div>
+      <div style="flex-grow: 1; height: 40%; background: #C9BFA8; border-radius: 2px;"></div>
+      <div style="flex-grow: 1; height: 78%; background: #C9BFA8; border-radius: 2px;"></div>
+      <div style="flex-grow: 1; height: 36%; background: #C9BFA8; border-radius: 2px;"></div>
+    </div>
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+      <span style="font-size: 12px; color: #6B767A; direction: ltr;">۰۸:۲۴</span>
+      <div style="display: flex; gap: 14px; align-items: center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4E5F63" stroke-width="2" stroke-linecap="round"><path d="M11 5 6 9H3v6h3l5 4V5z"></path><path d="M15.5 9.5a4 4 0 0 1 0 5"></path></svg>
+        <div style="width: 52px; height: 52px; border-radius: 100px; background: #0E8C8C; display: flex; align-items: center; justify-content: center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#FFFFFF"><path d="M8 5v14l11-7z"></path></svg>
+        </div>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4E5F63" stroke-width="2" stroke-linecap="round"><path d="M12 6v6l4 2"></path><circle cx="12" cy="12" r="9"></circle></svg>
+      </div>
+      <span style="font-size: 12px; color: #6B767A; direction: ltr;">۲۰:۴۰</span>
+    </div>
+    <div style="display: flex; gap: 8px; padding-top: 16px; border-top: 1px solid #EFE9DA;">
+      <span style="font-size: 12px; color: #6B767A; align-self: center; margin-left: 4px;">صدا:</span>
+      <span style="background: #0E8C8C; color: #FFFFFF; padding: 6px 14px; border-radius: 100px; font-size: 12.5px; font-weight: 700;">آرام</span>
+      <span style="background: #F4EFE3; color: #4E5F63; padding: 6px 14px; border-radius: 100px; font-size: 12.5px; font-weight: 600;">راوی</span>
+      <span style="background: #F4EFE3; color: #4E5F63; padding: 6px 14px; border-radius: 100px; font-size: 12.5px; font-weight: 600;">کوچولو</span>
+      <span style="background: #F4EFE3; color: #4E5F63; padding: 6px 14px; border-radius: 100px; font-size: 12.5px; font-weight: 600;">استاد</span>
+    </div>
+  </div>
+</div>
+
+<!-- 3 TRUST STRIP -->
+<div style="background: {{accent}}; padding: 40px 60px;">
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px;">
+    <div style="display: flex; flex-direction: column; gap: 4px; align-items: center;">
+      <strong style="font-size: 46px; font-weight: 900; color: #FFFFFF; letter-spacing: -0.03em; line-height: 1.1;">۱۲۰۰+</strong>
+      <span style="font-size: 14px; color: #C7E8E6; font-weight: 600;">کتاب صوتی</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 4px; align-items: center;">
+      <strong style="font-size: 46px; font-weight: 900; color: #FFFFFF; letter-spacing: -0.03em; line-height: 1.1;">۱۸</strong>
+      <span style="font-size: 14px; color: #C7E8E6; font-weight: 600;">گوینده</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 4px; align-items: center;">
+      <strong style="font-size: 46px; font-weight: 900; color: #FFFFFF; letter-spacing: -0.03em; line-height: 1.1;">۴۵+</strong>
+      <span style="font-size: 14px; color: #C7E8E6; font-weight: 600;">دسته محتوا</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 4px; align-items: center;">
+      <strong style="font-size: 46px; font-weight: 900; color: #FFFFFF; letter-spacing: -0.03em; line-height: 1.1;">۲۰K+</strong>
+      <span style="font-size: 14px; color: #C7E8E6; font-weight: 600;">کاربر</span>
+    </div>
+  </div>
+</div>
+
+<!-- 4 WHY US -->
+<div style="padding: 76px 60px; display: flex; flex-direction: column; gap: 36px;">
+  <div style="display: flex; flex-direction: column; gap: 8px;">
+    <span style="font-size: 12px; letter-spacing: 0.16em; color: {{accent}}; font-weight: 700;">چرا کتاپاد</span>
+    <h2 style="margin: 0; font-size: 34px; font-weight: 800; letter-spacing: -0.025em;">چهار چیزی که جای دیگری پیدا نمی‌کنید</h2>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px;">
+    <div style="background: #FFFFFF; border: 1px solid #E4DCC9; border-radius: 20px; overflow: hidden; display: flex; flex-direction: column;">
+      <div style="height: 7px; background: #0E8C8C;"></div>
+      <div style="padding: 24px 22px; display: flex; flex-direction: column; gap: 11px;">
+        <div style="width: 44px; height: 44px; border-radius: 100px; background: #DCEFEE; display: flex; align-items: center; justify-content: center;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#075E63" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"></path><path d="M18 16.5 19 19l2.5 1L19 21l-1 2.5L17 21l-2.5-1L17 19z"></path></svg>
+        </div>
+        <strong style="font-size: 17.5px; font-weight: 800;">پیشنهاد هوشمند</strong>
+        <span style="font-size: 13.8px; line-height: 1.8; color: #4E5F63;">کتاب‌ها بر اساس سن، سلیقه و رفتار شنیداری پیشنهاد می‌شوند.</span>
+      </div>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E4DCC9; border-radius: 20px; overflow: hidden; display: flex; flex-direction: column;">
+      <div style="height: 7px; background: #E0A429;"></div>
+      <div style="padding: 24px 22px; display: flex; flex-direction: column; gap: 11px;">
+        <div style="width: 44px; height: 44px; border-radius: 100px; background: #FBEDD2; display: flex; align-items: center; justify-content: center;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8A6413" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.9 8.9 0 0 1-3.8-.9L3 21l1.9-5.1A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"></path></svg>
+        </div>
+        <strong style="font-size: 17.5px; font-weight: 800;">تعامل با محتوا</strong>
+        <span style="font-size: 13.8px; line-height: 1.8; color: #4E5F63;">کاربر فقط شنونده نیست و تجربه شنیدن فعال‌تر می‌شود.</span>
+      </div>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E4DCC9; border-radius: 20px; overflow: hidden; display: flex; flex-direction: column;">
+      <div style="height: 7px; background: #B5502F;"></div>
+      <div style="padding: 24px 22px; display: flex; flex-direction: column; gap: 11px;">
+        <div style="width: 44px; height: 44px; border-radius: 100px; background: #F6DFD7; display: flex; align-items: center; justify-content: center;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8E3E23" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="6"></circle><path d="M9.5 9h.01M14.5 9h.01M9.8 13a3 3 0 0 0 4.4 0"></path><path d="M7 20h10"></path></svg>
+        </div>
+        <strong style="font-size: 17.5px; font-weight: 800;">تجربه اختصاصی کودک</strong>
+        <span style="font-size: 13.8px; line-height: 1.8; color: #4E5F63;">رابط، صدا و پیشنهادها متناسب با سن کودک تنظیم می‌شوند.</span>
+      </div>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E4DCC9; border-radius: 20px; overflow: hidden; display: flex; flex-direction: column;">
+      <div style="height: 7px; background: #26456E;"></div>
+      <div style="padding: 24px 22px; display: flex; flex-direction: column; gap: 11px;">
+        <div style="width: 44px; height: 44px; border-radius: 100px; background: #DEE5F0; display: flex; align-items: center; justify-content: center;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#26456E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z"></path></svg>
+        </div>
+        <strong style="font-size: 17.5px; font-weight: 800;">تنوع زبانی و فرهنگی</strong>
+        <span style="font-size: 13.8px; line-height: 1.8; color: #4E5F63;">محتوا متناسب با زبان‌ها و زمینه‌های فرهنگی مختلف ارائه می‌شود.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 5 PROBLEM -->
+<div style="background: #EAE3D2; padding: 72px 60px; display: flex; flex-direction: column; gap: 34px;">
+  <div style="display: flex; flex-direction: column; gap: 8px;">
+    <span style="font-size: 12px; letter-spacing: 0.16em; color: #8E3E23; font-weight: 700;">مسئله</span>
+    <h2 style="margin: 0; font-size: 34px; font-weight: 800; letter-spacing: -0.025em;">چرا تجربه فعلی کافی نیست</h2>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px;">
+    <div style="display: flex; flex-direction: column; gap: 9px; padding: 22px 20px; border-radius: 18px; background: #F4EFE3;">
+      <strong style="font-size: 16.5px; font-weight: 700;">زمان کم برای مطالعه</strong>
+      <span style="font-size: 13.8px; line-height: 1.8; color: #5A6A6E;">بخش زیادی از کاربران زمان کافی برای مطالعه مستمر ندارند و مصرف صوتی برایشان طبیعی‌تر است.</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 9px; padding: 22px 20px; border-radius: 18px; background: #F4EFE3;">
+      <strong style="font-size: 16.5px; font-weight: 700;">تجربه شنیدن یکنواخت</strong>
+      <span style="font-size: 13.8px; line-height: 1.8; color: #5A6A6E;">بسیاری از تجربه‌های موجود تفاوت کمی با یک فایل صوتی ساده دارند و درگیرکنندگی لازم را ایجاد نمی‌کنند.</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 9px; padding: 22px 20px; border-radius: 18px; background: #F4EFE3;">
+      <strong style="font-size: 16.5px; font-weight: 700;">نبود شخصی‌سازی</strong>
+      <span style="font-size: 13.8px; line-height: 1.8; color: #5A6A6E;">کاربر در انتخاب محتوا، سبک روایت و مسیر مصرف، تجربه شخصی‌شده کافی دریافت نمی‌کند.</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 9px; padding: 22px 20px; border-radius: 18px; background: #F4EFE3;">
+      <strong style="font-size: 16.5px; font-weight: 700;">نبود تعامل با محتوا</strong>
+      <span style="font-size: 13.8px; line-height: 1.8; color: #5A6A6E;">کاربر اغلب فقط شنونده منفعل است و محصول رفتار او را در تجربه شنیدن وارد نمی‌کند.</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 9px; padding: 22px 20px; border-radius: 18px; background: #F4EFE3;">
+      <strong style="font-size: 16.5px; font-weight: 700;">کمبود محتوای استاندارد کودک</strong>
+      <span style="font-size: 13.8px; line-height: 1.8; color: #5A6A6E;">پیدا کردن محتوای صوتی مناسب سن، امن و قابل اتکا برای کودک همیشه آسان نیست.</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 9px; padding: 22px 20px; border-radius: 18px; background: #F4EFE3;">
+      <strong style="font-size: 16.5px; font-weight: 700;">ضعف در پوشش زبان‌ها و فرهنگ‌ها</strong>
+      <span style="font-size: 13.8px; line-height: 1.8; color: #5A6A6E;">کاربران به محتوایی نزدیک‌تر به زبان، لهجه و فضای فرهنگی خود نیاز دارند.</span>
+    </div>
+  </div>
+</div>
+
+<!-- 6 FEATURES -->
+<div style="padding: 76px 60px; display: flex; flex-direction: column; gap: 34px;">
+  <div style="display: flex; flex-direction: column; gap: 8px;">
+    <span style="font-size: 12px; letter-spacing: 0.16em; color: {{accent}}; font-weight: 700;">امکانات</span>
+    <h2 style="margin: 0; font-size: 34px; font-weight: 800; letter-spacing: -0.025em;">آنچه داخل کتاپاد هست</h2>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px;">
+    <div style="background: #FFFFFF; border: 1px solid #E4DCC9; border-radius: 18px; padding: 22px 20px; display: flex; flex-direction: column; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <strong style="font-size: 16.5px; font-weight: 800;">پیشنهاد هوشمند کتاب</strong>
+        <span style="background: #0E8C8C; color: #FFFFFF; font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 100px; direction: ltr;">AI</span>
+      </div>
+      <span style="font-size: 13.5px; line-height: 1.8; color: #4E5F63;">سیستم با توجه به رفتار کاربر و علایق او، مسیر شنیدن را هوشمندتر می‌کند.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E4DCC9; border-radius: 18px; padding: 22px 20px; display: flex; flex-direction: column; gap: 10px;">
+      <strong style="font-size: 16.5px; font-weight: 800;">انتخاب گوینده</strong>
+      <span style="font-size: 13.5px; line-height: 1.8; color: #4E5F63;">کاربر می‌تواند سبک روایت یا صدای دلخواه خود را انتخاب کند.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E4DCC9; border-radius: 18px; padding: 22px 20px; display: flex; flex-direction: column; gap: 10px;">
+      <strong style="font-size: 16.5px; font-weight: 800;">حالت کودک</strong>
+      <span style="font-size: 13.5px; line-height: 1.8; color: #4E5F63;">ظاهر، پیشنهادها و تجربه استفاده برای کودک ساده‌تر و ایمن‌تر می‌شود.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E4DCC9; border-radius: 18px; padding: 22px 20px; display: flex; flex-direction: column; gap: 10px;">
+      <strong style="font-size: 16.5px; font-weight: 800;">محتوای چندزبانه</strong>
+      <span style="font-size: 13.5px; line-height: 1.8; color: #4E5F63;">کتاب‌ها و محتواها می‌توانند در چند زبان یا با رویکرد بومی عرضه شوند.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E4DCC9; border-radius: 18px; padding: 22px 20px; display: flex; flex-direction: column; gap: 10px;">
+      <strong style="font-size: 16.5px; font-weight: 800;">ادامه شنیدن</strong>
+      <span style="font-size: 13.5px; line-height: 1.8; color: #4E5F63;">کاربر از همان نقطه قبلی، بدون اصطکاک، دوباره شنیدن را شروع می‌کند.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E4DCC9; border-radius: 18px; padding: 22px 20px; display: flex; flex-direction: column; gap: 10px;">
+      <strong style="font-size: 16.5px; font-weight: 800;">کتابخانه شخصی</strong>
+      <span style="font-size: 13.5px; line-height: 1.8; color: #4E5F63;">فهرست علاقه‌مندی‌ها، آثار ذخیره‌شده و مسیرهای شنیدن کاربر یکجا نگهداری می‌شوند.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E4DCC9; border-radius: 18px; padding: 22px 20px; display: flex; flex-direction: column; gap: 10px;">
+      <strong style="font-size: 16.5px; font-weight: 800;">متناسب با سن و سلیقه</strong>
+      <span style="font-size: 13.5px; line-height: 1.8; color: #4E5F63;">پیشنهادها با گروه سنی، نیاز و الگوی مصرف شنیداری کاربر سازگار می‌شوند.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E4DCC9; border-radius: 18px; padding: 22px 20px; display: flex; flex-direction: column; gap: 10px;">
+      <strong style="font-size: 16.5px; font-weight: 800;">تجربه تعاملی</strong>
+      <span style="font-size: 13.5px; line-height: 1.8; color: #4E5F63;">محصول صرفاً یک پلیر نیست و در نقاطی تجربه شنیدن را هوشمند و درگیرکننده‌تر می‌کند.</span>
+    </div>
+  </div>
+</div>
+
+<!-- 7 INTERACTIVE DEMO -->
+<div style="background: #075E63; padding: 76px 60px; display: flex; flex-direction: column; gap: 32px;">
+  <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;">
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <span style="font-size: 12px; letter-spacing: 0.16em; color: #7FCFCB; font-weight: 700;">دمو زنده</span>
+      <h2 style="margin: 0; font-size: 34px; font-weight: 800; letter-spacing: -0.025em; color: #FFFFFF;">صدا را عوض کن، فرق را بشنو</h2>
+    </div>
+    <div onClick="{{toggleKids}}" style="{{kidsToggleStyle}}">
+      <span style="font-size: 13.5px; font-weight: 700;">حالت کودک</span>
+      <div style="{{kidsKnobTrack}}"><div style="{{kidsKnobDot}}"></div></div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1.15fr 1fr; gap: 24px; align-items: stretch;">
+    <div style="background: #F4EFE3; border-radius: 26px; padding: 26px; display: flex; flex-direction: column; gap: 20px;">
+      <div style="display: flex; gap: 18px;">
+        <div style="{{coverStyle}}">
+          <svg width="52" height="58" viewBox="0 0 100 110"><path d="M0,110 V46 Q0,6 50,0 Q100,6 100,46 V110 Z" fill="#F4EFE3" opacity="0.92"></path></svg>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px; flex-grow: 1;">
+          <span style="font-size: 11.5px; font-weight: 700; letter-spacing: 0.1em; color: #0E8C8C;">{{tagLabel}}</span>
+          <strong style="font-size: 24px; font-weight: 800; line-height: 1.35;">{{bookTitle}}</strong>
+          <span style="font-size: 13.5px; color: #6B767A;">با صدای {{voiceName}}</span>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="height: 7px; background: #E0D8C6; border-radius: 100px; overflow: hidden;">
+          <div style="{{progressStyle}}"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="font-size: 11.5px; color: #6B767A; direction: ltr;">{{elapsed}}</span>
+          <span style="font-size: 11.5px; color: #6B767A; direction: ltr;">{{duration}}</span>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; justify-content: center; gap: 22px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4E5F63" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 19V5l-8 7z"></path><path d="M20 19V5l-8 7z"></path></svg>
+        <div onClick="{{togglePlay}}" style="{{playBtnStyle}}">
+          <sc-if value="{{isPlaying}}" hint-placeholder-val="{{true}}">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="#FFFFFF"><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect></svg>
+          </sc-if>
+          <sc-if value="{{isPaused}}" hint-placeholder-val="{{false}}">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="#FFFFFF"><path d="M8 5v14l11-7z"></path></svg>
+          </sc-if>
+        </div>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4E5F63" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 19V5l8 7z"></path><path d="M4 19V5l8 7z"></path></svg>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; padding-top: 18px; border-top: 1px solid #E0D8C6;">
+        <span style="font-size: 12px; color: #6B767A; font-weight: 600;">انتخاب گوینده</span>
+        <div style="display: flex; gap: 9px; flex-wrap: wrap;">
+          <sc-for list="{{voices}}" as="v" hint-placeholder-count="4">
+            <div onClick="{{v.pick}}" style="{{v.chipStyle}}">
+              <svg width="18" height="20" viewBox="0 0 100 110"><path d="M0,110 V46 Q0,6 50,0 Q100,6 100,46 V110 Z" fill="{{v.markColor}}"></path></svg>
+              <span style="font-size: 13px; font-weight: 700;">{{v.name}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <span style="font-size: 12px; color: #7FCFCB; font-weight: 700; letter-spacing: 0.1em;">پیشنهاد برای تو</span>
+      <sc-for list="{{recs}}" as="r" hint-placeholder-count="3">
+        <div onClick="{{r.pick}}" style="{{r.cardStyle}}">
+          <div style="{{r.thumbStyle}}"></div>
+          <div style="display: flex; flex-direction: column; gap: 5px; flex-grow: 1;">
+            <strong style="font-size: 15.5px; font-weight: 700;">{{r.title}}</strong>
+            <span style="{{r.tagStyle}}">{{r.tag}}</span>
+          </div>
+        </div>
+      </sc-for>
+      <div style="background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.16); border-radius: 18px; padding: 16px 18px; display: flex; flex-direction: column; gap: 9px; margin-top: 4px;">
+        <span style="font-size: 11.5px; color: #7FCFCB; font-weight: 700; letter-spacing: 0.08em;">ادامه شنیدن</span>
+        <strong style="font-size: 15.5px; color: #FFFFFF; font-weight: 700;">قصه‌های کوتاه</strong>
+        <div style="height: 5px; background: rgba(255,255,255,0.18); border-radius: 100px; overflow: hidden;">
+          <div style="width: 68%; height: 100%; background: #E0A429;"></div>
+        </div>
+        <span style="font-size: 11.5px; color: #A9D6D3;">۶۸٪ شنیده‌ای</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 8 KIDS -->
+<div style="background: #FFF6E4; padding: 76px 60px; display: grid; grid-template-columns: 1fr 1.25fr; gap: 48px; align-items: center;">
+  <div style="display: flex; align-items: center; justify-content: center;">
+    <div style="position: relative; width: 260px; height: 300px; background: #E0A429; border-radius: 130px 130px 32px 32px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 26px;">
+      <svg width="150" height="166" viewBox="0 0 100 110">
+        <path d="M6,110 V56 Q6,8 50,4 Q94,8 94,56 V110 Z" fill="#FFF6E4"></path>
+        <circle cx="34" cy="58" r="9" fill="#FFFFFF"></circle>
+        <circle cx="66" cy="58" r="9" fill="#FFFFFF"></circle>
+        <circle cx="35" cy="59" r="4" fill="#1E2A2E"></circle>
+        <circle cx="67" cy="59" r="4" fill="#1E2A2E"></circle>
+        <path d="M40,80 Q50,91 60,80" stroke="#B5502F" stroke-width="5" fill="none" stroke-linecap="round"></path>
+        <circle cx="21" cy="75" r="5.5" fill="#F0956F" opacity="0.9"></circle>
+        <circle cx="79" cy="75" r="5.5" fill="#F0956F" opacity="0.9"></circle>
+      </svg>
+    </div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 22px;">
+    <span style="align-self: flex-start; background: #0E8C8C; color: #FFFFFF; padding: 7px 16px; border-radius: 100px; font-size: 12.5px; font-weight: 700;">بدون تبلیغات · کنترل کامل والدین</span>
+    <h2 style="margin: 0; font-size: 36px; font-weight: 900; letter-spacing: -0.025em; color: #5C3A12; line-height: 1.32;">تجربه‌ای اختصاصی برای کودک</h2>
+    <p style="margin: 0; font-size: 16.5px; line-height: 1.85; color: #6B5A38; max-width: 52ch;">محتوا، صدا، پیشنهادها و رابط کاربری برای گروه سنی کودک به شکل جداگانه طراحی شده‌اند.</p>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px;">
+      <div style="background: #FFFFFF; border-radius: 18px; padding: 18px 20px; display: flex; flex-direction: column; gap: 7px;">
+        <strong style="font-size: 15.5px; font-weight: 800; color: #5C3A12;">محیط مناسب سن</strong>
+        <span style="font-size: 13.2px; line-height: 1.75; color: #7A6947;">رابط کاربری ساده‌تر، خواناتر و قابل فهم‌تر است و تصمیم‌گیری را برای کودک آسان می‌کند.</span>
+      </div>
+      <div style="background: #FFFFFF; border-radius: 18px; padding: 18px 20px; display: flex; flex-direction: column; gap: 7px;">
+        <strong style="font-size: 15.5px; font-weight: 800; color: #5C3A12;">محتوای امن و کنترل‌شده</strong>
+        <span style="font-size: 13.2px; line-height: 1.75; color: #7A6947;">نمایش و پیشنهاد محتوا در مسیر مناسب سن و متناسب با سناریوی کودک محدود می‌شود.</span>
+      </div>
+      <div style="background: #FFFFFF; border-radius: 18px; padding: 18px 20px; display: flex; flex-direction: column; gap: 7px;">
+        <strong style="font-size: 15.5px; font-weight: 800; color: #5C3A12;">صدای مناسب کودک</strong>
+        <span style="font-size: 13.2px; line-height: 1.75; color: #7A6947;">سبک روایت، تن صدا و مدل ارائه برای شنونده کودک خوش‌فهم‌تر و جذاب‌تر است.</span>
+      </div>
+      <div style="background: #FFFFFF; border-radius: 18px; padding: 18px 20px; display: flex; flex-direction: column; gap: 7px;">
+        <strong style="font-size: 15.5px; font-weight: 800; color: #5C3A12;">کمک به یادگیری</strong>
+        <span style="font-size: 13.2px; line-height: 1.75; color: #7A6947;">محصول فقط برای سرگرمی نیست و به شکل‌گیری عادت شنیدن، تمرکز و یادگیری کمک می‌کند.</span>
+      </div>
+    </div>
+    <span style="align-self: flex-start; background: #B5502F; color: #FFFFFF; padding: 15px 34px; border-radius: 100px; font-size: 16px; font-weight: 700;">رایگان گوش کن</span>
+  </div>
+</div>
+
+<!-- 9 LOCALIZATION -->
+<div style="padding: 76px 60px; display: flex; flex-direction: column; gap: 34px;">
+  <div style="display: flex; flex-direction: column; gap: 8px;">
+    <span style="font-size: 12px; letter-spacing: 0.16em; color: {{accent}}; font-weight: 700;">زبان‌ها و فرهنگ‌ها</span>
+    <h2 style="margin: 0; font-size: 34px; font-weight: 800; letter-spacing: -0.025em;">برای زبان‌ها و فرهنگ‌های متنوع</h2>
+    <p style="margin: 6px 0 0; font-size: 16.5px; line-height: 1.85; color: #4E5F63; max-width: 58ch;">محتوای بومی، زبان‌های مختلف و تجربه‌ای نزدیک‌تر به شنونده.</p>
+  </div>
+  <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+    <span style="background: #0E8C8C; color: #FFFFFF; padding: 9px 20px; border-radius: 100px; font-size: 14px; font-weight: 700;">فارسی</span>
+    <span style="background: #FFFFFF; border: 1px solid #E4DCC9; color: #4E5F63; padding: 9px 20px; border-radius: 100px; font-size: 14px; font-weight: 600; direction: ltr;">English</span>
+    <span style="background: #FFFFFF; border: 1px solid #E4DCC9; color: #4E5F63; padding: 9px 20px; border-radius: 100px; font-size: 14px; font-weight: 600;">العربية</span>
+    <span style="background: #FFFFFF; border: 1px solid #E4DCC9; color: #4E5F63; padding: 9px 20px; border-radius: 100px; font-size: 14px; font-weight: 600;">کوردی</span>
+    <span style="background: #FFFFFF; border: 1px solid #E4DCC9; color: #4E5F63; padding: 9px 20px; border-radius: 100px; font-size: 14px; font-weight: 600; direction: ltr;">Türkçe</span>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px;">
+    <div style="background: #FFFFFF; border: 1px solid #E4DCC9; border-radius: 20px; overflow: hidden;">
+      <div style="height: 116px; background: #075E63; display: flex; align-items: center; justify-content: center; gap: 10px;">
+        <svg width="42" height="42" viewBox="0 0 100 100"><path d="M50,10 L72,32 L50,54 L28,32 Z" fill="#7FCFCB"></path><path d="M50,46 L72,68 L50,90 L28,68 Z" fill="#E0A429"></path></svg>
+      </div>
+      <div style="padding: 18px 20px; display: flex; flex-direction: column; gap: 6px;">
+        <strong style="font-size: 16.5px; font-weight: 800;">افسانه‌های محلی</strong>
+        <span style="font-size: 13px; color: #6B767A;">فارسی</span>
+      </div>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E4DCC9; border-radius: 20px; overflow: hidden;">
+      <div style="height: 116px; background: #26456E; display: flex; align-items: center; justify-content: center;">
+        <svg width="42" height="42" viewBox="0 0 100 100"><circle cx="50" cy="50" r="30" fill="none" stroke="#9FB6D8" stroke-width="8"></circle><circle cx="50" cy="50" r="12" fill="#E0A429"></circle></svg>
+      </div>
+      <div style="padding: 18px 20px; display: flex; flex-direction: column; gap: 6px;">
+        <strong style="font-size: 16.5px; font-weight: 800; direction: ltr; text-align: right;">Bedtime Stories</strong>
+        <span style="font-size: 13px; color: #6B767A; direction: ltr; text-align: right;">English</span>
+      </div>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E4DCC9; border-radius: 20px; overflow: hidden;">
+      <div style="height: 116px; background: #B5502F; display: flex; align-items: center; justify-content: center;">
+        <svg width="42" height="42" viewBox="0 0 100 100"><path d="M20,50 L50,20 L80,50 L50,80 Z" fill="#F6DFD7"></path><path d="M35,50 L50,35 L65,50 L50,65 Z" fill="#B5502F"></path></svg>
+      </div>
+      <div style="padding: 18px 20px; display: flex; flex-direction: column; gap: 6px;">
+        <strong style="font-size: 16.5px; font-weight: 800;">قصه‌های قومی</strong>
+        <span style="font-size: 13px; color: #6B767A;">کوردی</span>
+      </div>
+    </div>
+  </div>
+  <div style="display: flex; gap: 9px; flex-wrap: wrap;">
+    <span style="background: #EAE3D2; color: #4E5F63; padding: 7px 16px; border-radius: 100px; font-size: 13px; font-weight: 600;">قصه‌های محلی</span>
+    <span style="background: #EAE3D2; color: #4E5F63; padding: 7px 16px; border-radius: 100px; font-size: 13px; font-weight: 600;">ادبیات کودک بومی</span>
+    <span style="background: #EAE3D2; color: #4E5F63; padding: 7px 16px; border-radius: 100px; font-size: 13px; font-weight: 600;">فرهنگ عامه</span>
+    <span style="background: #EAE3D2; color: #4E5F63; padding: 7px 16px; border-radius: 100px; font-size: 13px; font-weight: 600;">افسانه‌ها</span>
+    <span style="background: #EAE3D2; color: #4E5F63; padding: 7px 16px; border-radius: 100px; font-size: 13px; font-weight: 600;">روایت‌های منطقه‌ای</span>
+  </div>
+</div>
+
+<!-- 10 SOCIAL PROOF -->
+<div style="background: #EAE3D2; padding: 72px 60px; display: flex; flex-direction: column; gap: 32px;">
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <h2 style="margin: 0; font-size: 34px; font-weight: 800; letter-spacing: -0.025em;">آنچه تا امروز ساخته‌ایم</h2>
+    <span style="background: #F6DFD7; color: #8E3E23; padding: 5px 12px; border-radius: 100px; font-size: 11.5px; font-weight: 700;">[ارقام نمونه — جایگزین شود]</span>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px;">
+    <div style="background: #F4EFE3; border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 4px;">
+      <strong style="font-size: 34px; font-weight: 900; letter-spacing: -0.03em;">۱۲۰۰+</strong>
+      <span style="font-size: 13.5px; color: #6B767A; font-weight: 600;">کتاب</span>
+    </div>
+    <div style="background: #F4EFE3; border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 4px;">
+      <strong style="font-size: 34px; font-weight: 900; letter-spacing: -0.03em;">۱۸</strong>
+      <span style="font-size: 13.5px; color: #6B767A; font-weight: 600;">صدا</span>
+    </div>
+    <div style="background: #F4EFE3; border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 4px;">
+      <strong style="font-size: 34px; font-weight: 900; letter-spacing: -0.03em;">۲۰K+</strong>
+      <span style="font-size: 13.5px; color: #6B767A; font-weight: 600;">کاربر</span>
+    </div>
+    <div style="background: #F4EFE3; border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 4px;">
+      <strong style="font-size: 34px; font-weight: 900; letter-spacing: -0.03em;">۲۴</strong>
+      <span style="font-size: 13.5px; color: #6B767A; font-weight: 600;">همکار</span>
+    </div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px;">
+    <div style="background: #F4EFE3; border-radius: 20px; padding: 26px; display: flex; flex-direction: column; gap: 14px;">
+      <span style="font-size: 11px; font-weight: 700; color: #8E3E23; letter-spacing: 0.08em;">[نظر نمونه]</span>
+      <p style="margin: 0; font-size: 17px; line-height: 1.85; color: #1E2A2E;">«فرزندم با این تجربه بیشتر به شنیدن علاقه‌مند شده است.»</p>
+      <div style="display: flex; align-items: center; gap: 11px;">
+        <div style="width: 40px; height: 40px; border-radius: 100px; background: #E0A429;"></div>
+        <div style="display: flex; flex-direction: column;">
+          <strong style="font-size: 14px; font-weight: 700;">مریم</strong>
+          <span style="font-size: 12.5px; color: #6B767A;">مادر</span>
+        </div>
+      </div>
+    </div>
+    <div style="background: #F4EFE3; border-radius: 20px; padding: 26px; display: flex; flex-direction: column; gap: 14px;">
+      <span style="font-size: 11px; font-weight: 700; color: #8E3E23; letter-spacing: 0.08em;">[نظر نمونه]</span>
+      <p style="margin: 0; font-size: 17px; line-height: 1.85; color: #1E2A2E;">«پیشنهادهای هوشمند واقعاً نزدیک به سلیقه من بودند.»</p>
+      <div style="display: flex; align-items: center; gap: 11px;">
+        <div style="width: 40px; height: 40px; border-radius: 100px; background: #0E8C8C;"></div>
+        <div style="display: flex; flex-direction: column;">
+          <strong style="font-size: 14px; font-weight: 700;">رضا</strong>
+          <span style="font-size: 12.5px; color: #6B767A;">کاربر</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+    <span style="font-size: 12.5px; color: #6B767A; font-weight: 600;">همکاران:</span>
+    <div style="width: 108px; height: 34px; border-radius: 8px; background: #D8D0BE;"></div>
+    <div style="width: 108px; height: 34px; border-radius: 8px; background: #D8D0BE;"></div>
+    <div style="width: 108px; height: 34px; border-radius: 8px; background: #D8D0BE;"></div>
+    <span style="font-size: 11.5px; color: #8E3E23; font-weight: 600;">[لوگوی همکاران — جایگزین شود]</span>
+  </div>
+</div>
+
+<!-- 11 FAQ -->
+<div style="padding: 76px 60px; display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 48px; align-items: start;">
+  <div style="display: flex; flex-direction: column; gap: 10px;">
+    <span style="font-size: 12px; letter-spacing: 0.16em; color: {{accent}}; font-weight: 700;">سوالات متداول</span>
+    <h2 style="margin: 0; font-size: 34px; font-weight: 800; letter-spacing: -0.025em; line-height: 1.35;">هرچه پیش از شروع می‌خواهید بدانید</h2>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 10px;">
+    <div style="background: #FFFFFF; border: 1px solid #E4DCC9; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 10px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+        <strong style="font-size: 16px; font-weight: 700;">تفاوت این سرویس با کتاب صوتی معمولی چیست؟</strong>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0E8C8C" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14"></path></svg>
+      </div>
+      <span style="font-size: 14.2px; line-height: 1.85; color: #4E5F63;">این محصول فقط فایل صوتی ارائه نمی‌کند و تجربه شنیدن را با پیشنهاد هوشمند، انتخاب صدا و سناریوهای متناسب با کاربر غنی‌تر می‌کند.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E4DCC9; border-radius: 16px; padding: 20px 22px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+      <strong style="font-size: 16px; font-weight: 700;">آیا امکان انتخاب صدا وجود دارد؟</strong>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8FA0A4" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E4DCC9; border-radius: 16px; padding: 20px 22px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+      <strong style="font-size: 16px; font-weight: 700;">آیا برای کودک مناسب است؟</strong>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8FA0A4" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E4DCC9; border-radius: 16px; padding: 20px 22px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+      <strong style="font-size: 16px; font-weight: 700;">آیا محتوای چندزبانه دارد؟</strong>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8FA0A4" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E4DCC9; border-radius: 16px; padding: 20px 22px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+      <strong style="font-size: 16px; font-weight: 700;">آیا تجربه شخصی‌سازی‌شده است؟</strong>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8FA0A4" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E4DCC9; border-radius: 16px; padding: 20px 22px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+      <strong style="font-size: 16px; font-weight: 700;">آیا اپلیکیشن موبایل هم دارد؟</strong>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8FA0A4" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E4DCC9; border-radius: 16px; padding: 20px 22px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+      <strong style="font-size: 16px; font-weight: 700;">آیا محتوای بومی هم پشتیبانی می‌شود؟</strong>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8FA0A4" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E4DCC9; border-radius: 16px; padding: 20px 22px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+      <strong style="font-size: 16px; font-weight: 700;">چطور می‌توانم شروع کنم؟</strong>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8FA0A4" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+    </div>
+  </div>
+</div>
+
+<!-- 12 LEAD FORM -->
+<div style="background: #B5502F; padding: 76px 60px; display: grid; grid-template-columns: 1fr 1.1fr; gap: 48px; align-items: center;">
+  <div style="display: flex; flex-direction: column; gap: 18px;">
+    <h2 style="margin: 0; font-size: 36px; font-weight: 900; letter-spacing: -0.025em; color: #FFFFFF; line-height: 1.35;">جزو اولین شنونده‌ها باش</h2>
+    <p style="margin: 0; font-size: 16.5px; line-height: 1.85; color: #F6DFD7; max-width: 44ch;">شماره‌ات را بگذار تا وقتی نسخه اول آماده شد، اول از همه خبردار شوی.</p>
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 6px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F0C4B5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg>
+        <span style="font-size: 14.5px; color: #F6DFD7;">بدون هزینه، بدون تعهد</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F0C4B5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg>
+        <span style="font-size: 14.5px; color: #F6DFD7;">فقط یک پیامک، نه بیشتر</span>
+      </div>
+    </div>
+  </div>
+  <div style="background: #F4EFE3; border-radius: 26px; padding: 30px; display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px;">
+      <div style="display: flex; flex-direction: column; gap: 7px;">
+        <span style="font-size: 13px; font-weight: 600; color: #4E5F63;">نام و نام خانوادگی</span>
+        <div style="height: 48px; background: #FFFFFF; border: 1px solid #E0D8C6; border-radius: 12px; display: flex; align-items: center; padding: 0 16px;">
+          <span style="font-size: 14.5px; color: #A9B2B5;">علی رضایی</span>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 7px;">
+        <span style="font-size: 13px; font-weight: 600; color: #4E5F63;">شماره موبایل</span>
+        <div style="height: 48px; background: #FFFFFF; border: 1px solid #E0D8C6; border-radius: 12px; display: flex; align-items: center; padding: 0 16px;">
+          <span style="font-size: 14.5px; color: #A9B2B5; direction: ltr;">۰۹۱۲۰۰۰۰۰۰۰</span>
+        </div>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 9px;">
+      <span style="font-size: 13px; font-weight: 600; color: #4E5F63;">من هستم…</span>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <span style="background: #0E8C8C; color: #FFFFFF; padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 700;">والدین</span>
+        <span style="background: #FFFFFF; border: 1px solid #E0D8C6; color: #4E5F63; padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 600;">کاربر عادی</span>
+        <span style="background: #FFFFFF; border: 1px solid #E0D8C6; color: #4E5F63; padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 600;">نوجوان</span>
+        <span style="background: #FFFFFF; border: 1px solid #E0D8C6; color: #4E5F63; padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 600;">ناشر</span>
+        <span style="background: #FFFFFF; border: 1px solid #E0D8C6; color: #4E5F63; padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 600;">تولیدکننده محتوا</span>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 9px;">
+      <span style="font-size: 13px; font-weight: 600; color: #4E5F63;">به چه چیزی علاقه دارید؟</span>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <span style="background: #FBEDD2; border: 1px solid #E9D9AE; color: #8A6413; padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 700;">کودک</span>
+        <span style="background: #FFFFFF; border: 1px solid #E0D8C6; color: #4E5F63; padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 600;">داستان</span>
+        <span style="background: #FFFFFF; border: 1px solid #E0D8C6; color: #4E5F63; padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 600;">توسعه فردی</span>
+        <span style="background: #FFFFFF; border: 1px solid #E0D8C6; color: #4E5F63; padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 600;">آموزشی</span>
+        <span style="background: #FFFFFF; border: 1px solid #E0D8C6; color: #4E5F63; padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 600;">محتوای بومی</span>
+      </div>
+    </div>
+    <div style="display: flex; align-items: flex-start; gap: 10px;">
+      <div style="width: 20px; height: 20px; border-radius: 6px; background: #0E8C8C; display: flex; align-items: center; justify-content: center; flex: none; margin-top: 2px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg>
+      </div>
+      <span style="font-size: 13px; line-height: 1.75; color: #4E5F63;">با دریافت پیامک اطلاع‌رسانی موافقم و <a href="#">قوانین و حریم خصوصی</a> را می‌پذیرم.</span>
+    </div>
+    <span style="background: {{accent}}; color: #FFFFFF; padding: 15px 34px; border-radius: 100px; font-size: 16px; font-weight: 700; text-align: center;">ثبت‌نام رایگان</span>
+  </div>
+</div>
+
+<!-- 13 FINAL CTA -->
+<div style="background: {{accent}}; padding: 84px 60px; display: flex; flex-direction: column; align-items: center; gap: 20px; text-align: center;">
+  <h2 style="margin: 0; font-size: 40px; font-weight: 900; letter-spacing: -0.03em; color: #FFFFFF; max-width: 20ch; line-height: 1.35; text-wrap: balance;">آماده‌ای تجربه جدید کتاب صوتی را شروع کنی؟</h2>
+  <p style="margin: 0; font-size: 17px; line-height: 1.8; color: #C7E8E6; max-width: 48ch;">ثبت‌نام کن و جزو اولین نفراتی باش که این تجربه را امتحان می‌کنند.</p>
+  <div style="display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap; justify-content: center;">
+    <span style="background: #FFFFFF; color: #075E63; padding: 15px 34px; border-radius: 100px; font-size: 16px; font-weight: 700;">رایگان گوش کن</span>
+    <span style="border: 1.5px solid rgba(255,255,255,0.42); color: #FFFFFF; padding: 14px 30px; border-radius: 100px; font-size: 16px; font-weight: 600;">مشاهده دمو</span>
+  </div>
+</div>
+
+<!-- 14 FOOTER -->
+<div style="background: #1E2A2E; padding: 54px 60px 40px; display: flex; flex-direction: column; gap: 34px;">
+  <div style="display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 36px;">
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <svg width="24" height="27" viewBox="0 0 100 110"><path d="M0,110 V46 Q0,6 50,0 Q100,6 100,46 V110 Z" fill="#7FCFCB"></path><circle cx="50" cy="62" r="15" fill="#1E2A2E"></circle></svg>
+        <strong style="font-size: 19px; font-weight: 900; color: #FFFFFF;">کتاپاد</strong>
+      </div>
+      <p style="margin: 0; font-size: 14px; line-height: 1.85; color: #8FA0A4; max-width: 40ch;">پلتفرم هوشمند کتاب صوتی برای تجربه‌ای شخصی‌تر، تعاملی‌تر و نزدیک‌تر به مخاطب.</p>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 11px;">
+      <strong style="font-size: 13.5px; color: #FFFFFF; font-weight: 700;">محصول</strong>
+      <a href="#" style="font-size: 14px; color: #8FA0A4;">امکانات</a>
+      <a href="#" style="font-size: 14px; color: #8FA0A4;">کودک</a>
+      <a href="#" style="font-size: 14px; color: #8FA0A4;">سوالات متداول</a>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 11px;">
+      <strong style="font-size: 13.5px; color: #FFFFFF; font-weight: 700;">قوانین</strong>
+      <a href="#" style="font-size: 14px; color: #8FA0A4;">حریم خصوصی</a>
+      <a href="#" style="font-size: 14px; color: #8FA0A4;">قوانین و شرایط</a>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 11px;">
+      <strong style="font-size: 13.5px; color: #FFFFFF; font-weight: 700;">تماس</strong>
+      <span style="font-size: 14px; color: #8FA0A4; direction: ltr; text-align: right;">[ایمیل شما]</span>
+      <span style="font-size: 14px; color: #8FA0A4; direction: ltr; text-align: right;">[تلفن شما]</span>
+      <div style="display: flex; gap: 12px; margin-top: 4px;">
+        <a href="#" style="font-size: 13.5px; color: #7FCFCB;">اینستاگرام</a>
+        <a href="#" style="font-size: 13.5px; color: #7FCFCB;">لینکدین</a>
+      </div>
+    </div>
+  </div>
+  <div style="padding-top: 22px; border-top: 1px solid #2E3D42;">
+    <span style="font-size: 13px; color: #6D7C80;">© ۱۴۰۵ کتاپاد — تمام حقوق محفوظ است.</span>
+  </div>
+</div>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"accent":{"editor":"color","default":"#0E8C8C","options":["#0E8C8C","#075E63","#B5502F","#26456E"],"section":"تم"}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { playing: true, voice: 'aram', rec: 'r1', kids: false };
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#0E8C8C';
+    const kids = this.state.kids;
+    const voiceDefs = [
+      { id: 'aram', name: 'آرام', mark: '#0E8C8C' },
+      { id: 'ravi', name: 'راوی', mark: '#B5502F' },
+      { id: 'kuchulu', name: 'کوچولو', mark: '#E0A429' },
+      { id: 'ostad', name: 'استاد', mark: '#26456E' }
+    ];
+    const recDefs = [
+      { id: 'r1', title: 'قصه شب', tag: 'پیشنهاد هوشمند', thumb: '#0E8C8C', dur: '۲۰:۴۰', el: '۰۸:۲۴', pct: 42 },
+      { id: 'r2', title: 'ماجرای کوچک', tag: 'کودک', thumb: '#E0A429', dur: '۱۴:۰۵', el: '۰۳:۱۱', pct: 22 },
+      { id: 'r3', title: 'افسانه محلی', tag: 'بومی', thumb: '#B5502F', dur: '۳۱:۱۸', el: '۱۲:۵۰', pct: 61 }
+    ];
+    const active = recDefs.find((r) => r.id === this.state.rec) || recDefs[0];
+    const activeVoice = voiceDefs.find((v) => v.id === this.state.voice) || voiceDefs[0];
+
+    const voices = voiceDefs.map((v) => {
+      const on = v.id === this.state.voice;
+      return {
+        name: v.name,
+        markColor: on ? '#FFFFFF' : v.mark,
+        chipStyle: 'display: flex; align-items: center; gap: 7px; padding: 8px 15px; border-radius: 100px; cursor: pointer; border: 1px solid ' +
+          (on ? v.mark : '#E0D8C6') + '; background: ' + (on ? v.mark : '#FFFFFF') + '; color: ' + (on ? '#FFFFFF' : '#4E5F63') + ';',
+        pick: () => this.setState({ voice: v.id })
+      };
+    });
+
+    const recs = recDefs.map((r) => {
+      const on = r.id === this.state.rec;
+      return {
+        title: r.title,
+        tag: r.tag,
+        cardStyle: 'display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 18px; cursor: pointer; background: ' +
+          (on ? '#F4EFE3' : 'rgba(255,255,255,0.09)') + '; border: 1px solid ' + (on ? '#F4EFE3' : 'rgba(255,255,255,0.16)') + ';',
+        thumbStyle: 'width: 46px; height: 56px; border-radius: 23px 23px 8px 8px; flex: none; background: ' + r.thumb + ';',
+        tagStyle: 'font-size: 12px; font-weight: 600; color: ' + (on ? '#0E8C8C' : '#A9D6D3') + ';',
+        pick: () => this.setState({ rec: r.id })
+      };
+    });
+
+    return {
+      accent,
+      voices,
+      recs,
+      voiceName: activeVoice.name,
+      bookTitle: active.title,
+      tagLabel: active.tag,
+      elapsed: active.el,
+      duration: active.dur,
+      isPlaying: this.state.playing,
+      isPaused: !this.state.playing,
+      progressStyle: 'width: ' + active.pct + '%; height: 100%; background: ' + accent + '; border-radius: 100px;',
+      coverStyle: 'width: 104px; height: 132px; border-radius: 52px 52px 12px 12px; flex: none; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 14px; background: ' + active.thumb + ';',
+      playBtnStyle: 'width: 58px; height: 58px; border-radius: 100px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: ' + accent + ';',
+      togglePlay: () => this.setState({ playing: !this.state.playing }),
+      toggleKids: () => this.setState({ kids: !kids }),
+      kidsToggleStyle: 'display: flex; align-items: center; gap: 11px; padding: 10px 18px; border-radius: 100px; cursor: pointer; border: 1px solid ' +
+        (kids ? '#E0A429' : 'rgba(255,255,255,0.28)') + '; background: ' + (kids ? '#E0A429' : 'transparent') + '; color: ' + (kids ? '#3D2A08' : '#C7E8E6') + ';',
+      kidsKnobTrack: 'width: 40px; height: 22px; border-radius: 100px; padding: 3px; display: flex; justify-content: ' +
+        (kids ? 'flex-start' : 'flex-end') + '; background: ' + (kids ? '#FFFFFF' : 'rgba(255,255,255,0.22)') + ';',
+      kidsKnobDot: 'width: 16px; height: 16px; border-radius: 100px; background: ' + (kids ? '#E0A429' : '#FFFFFF') + ';'
+    };
+  }
+}
+</script>
+</body>
+</html>
