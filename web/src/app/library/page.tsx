@@ -85,7 +85,7 @@ export default function LibraryPage() {
         <section className="mt-8">
           <h2 className="text-[15px] font-bold text-muted">ادامه شنیدن</h2>
           <Link
-            href={routes.book(resume.bookSlug)}
+            href={`/player/${resume.editionId}`}
             className="group lift mt-3 flex items-center gap-4 rounded-lg border border-line bg-card p-4 shadow-e1 transition-[border-color,box-shadow] hover:border-violet-200 sm:p-5"
           >
             <span className="grid size-12 shrink-0 place-items-center rounded-full bg-violet text-white">
@@ -130,8 +130,10 @@ export default function LibraryPage() {
           <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((item) => (
               <li key={item.entitlementId}>
+                {/* An expired grant loses its way into the player and points at
+                    the public page instead, where it can be bought again. */}
                 <Link
-                  href={routes.book(item.bookSlug)}
+                  href={item.expired ? routes.book(item.bookSlug) : `/player/${item.editionId}`}
                   className="group lift flex h-full gap-4 rounded-lg border border-line bg-card p-4 shadow-e1 transition-[border-color,box-shadow] hover:border-violet-200"
                 >
                   <CoverArt

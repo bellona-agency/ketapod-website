@@ -26,5 +26,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/library/:path*", "/wallet/:path*"],
+  matcher: ["/library/:path*", "/wallet/:path*", "/player/:path*"],
 };

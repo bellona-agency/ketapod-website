@@ -81,6 +81,37 @@ export type LibraryItem = {
   lastPlayedAt: string | null;
 };
 
+export type Chapter = {
+  index: number;
+  title: string;
+  startSec: number;
+  endSec: number;
+};
+
+export type Cue = { startSec: number; endSec: number; text: string };
+
+export type Mark = {
+  id: string;
+  positionSec: number;
+  label: string;
+  createdAt: string;
+};
+
+export type EditionDetail = {
+  editionId: string;
+  bookSlug: string;
+  title: string;
+  narratorType: "human" | "ai";
+  durationSec: number;
+  voice: { slug: string; name: string; timbre: string } | null;
+  audioUrl: string;
+  chapters: Chapter[];
+  transcript: Cue[];
+  positionSec: number;
+  bookmarks: Mark[];
+  notes: { id: string; positionSec: number; body: string; createdAt: string }[];
+};
+
 export type LedgerEntry = {
   id: string;
   amountRial: number;
@@ -117,6 +148,21 @@ export const topUp = (amountRial: number) =>
   call<{ balanceRial: number }>("/me/wallet", {
     method: "POST",
     body: JSON.stringify({ amountRial }),
+  });
+
+export const getEdition = (editionId: string) =>
+  call<EditionDetail>(`/editions/${encodeURIComponent(editionId)}`);
+
+export const addBookmark = (editionId: string, positionSec: number, label?: string) =>
+  call<{ bookmark: Mark; created: boolean }>("/me/bookmarks", {
+    method: "POST",
+    body: JSON.stringify({ editionId, positionSec, label, kind: "bookmark" }),
+  });
+
+export const addNote = (editionId: string, positionSec: number, body: string) =>
+  call<{ note: { id: string } }>("/me/bookmarks", {
+    method: "POST",
+    body: JSON.stringify({ editionId, positionSec, body, kind: "note" }),
   });
 
 export const buyEdition = (editionId: string) =>
