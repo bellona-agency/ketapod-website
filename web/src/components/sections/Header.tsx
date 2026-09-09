@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, X } from "lucide-react";
+import { LibraryBig, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
@@ -129,6 +129,18 @@ export function Header() {
           </nav>
 
           <div className="flex flex-1 items-center justify-end gap-2 xl:flex-none">
+            {/* Entry to the authenticated product. A single link rather than a
+                session-aware menu on purpose: the header stays a static part of
+                every SSG page, and `/library` already bounces a logged-out
+                visitor to `/login` and back again afterwards. */}
+            <Link
+              href="/library"
+              className="hidden h-12 items-center gap-2 rounded-full border border-line bg-card/70 px-5 text-[16px] font-medium text-ink transition-colors hover:border-violet-200 sm:inline-flex"
+            >
+              <LibraryBig className="size-4" strokeWidth={1.7} aria-hidden />
+              کتابخانه
+            </Link>
+
             <div className="hidden sm:block">
               <Cta
                 label={PRIMARY_CTA_LABEL}
@@ -214,6 +226,16 @@ export function Header() {
                 {item.label}
               </Link>
             ))}
+
+            <Link
+              href="/library"
+              onClick={closeDrawer}
+              className="kp-drawer-item mt-2 flex items-center gap-3 rounded-md border border-line px-3 py-3.5 text-right text-[18px] font-medium text-ink transition-colors hover:bg-paper-2"
+              style={{ "--kp-delay": `${(0.12 + NAV_LINKS.length * 0.05).toFixed(2)}s` } as CSSProperties}
+            >
+              <LibraryBig className="size-5" strokeWidth={1.7} aria-hidden />
+              کتابخانه من
+            </Link>
           </nav>
 
           <div className="border-t border-line p-4">
