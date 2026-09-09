@@ -34,6 +34,7 @@ export const config = {
     "/wallet/:path*",
     "/player/:path*",
     "/parent/:path*",
+    "/progress/:path*",
     "/kids/:childId+",
   ],
 };

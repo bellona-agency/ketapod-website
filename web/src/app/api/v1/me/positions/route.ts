@@ -1,4 +1,4 @@
-import { db, findEditionById, hasEntitlement } from "@/lib/mock/db";
+import { dayKey, db, findEditionById, hasEntitlement, uid } from "@/lib/mock/db";
 import { requireUser } from "@/lib/mock/session";
 
 /**
@@ -68,9 +68,49 @@ export async function PUT(req: Request) {
     return Response.json({ position: existing, applied: false, reason: "stale_write" });
   }
 
+  /* Bank the forward movement as listened time.
+     The dashboard needs elapsed minutes and a position cannot supply them — it
+     is a bookmark, so it moves backwards on a replay and sideways on a seek.
+     The *delta* between two accepted writes is real listening, which is why it
+     is recorded here rather than inferred later from the stored value.
+     Only forward movement counts, and only movement small enough to have been
+     played in the time since the last write: a seek across a chapter is a jump,
+     not an hour of listening. */
+  const delta = positionSec - existing.positionSec;
+  const sinceLastWriteSec =
+    (Date.parse(incoming) - Date.parse(existing.updatedAt)) / 1000;
+  if (delta > 0 && delta <= Math.max(sinceLastWriteSec * 3, 30)) {
+    bankListening(user.id, found.edition.id, delta);
+  }
+
   existing.positionSec = positionSec;
   existing.updatedAt = incoming;
   return Response.json({ position: existing, applied: true });
+}
+
+/** One row per account, edition and day; seconds accumulate into it. */
+function bankListening(userId: string, editionId: string, seconds: number) {
+  const day = dayKey();
+  const row = db.listening.find(
+    (s) =>
+      s.userId === userId &&
+      s.childProfileId === null &&
+      s.editionId === editionId &&
+      s.day === day,
+  );
+  if (row) {
+    row.seconds += seconds;
+    return;
+  }
+  db.listening.push({
+    id: `ls_${uid()}`,
+    childProfileId: null,
+    userId,
+    editionId,
+    day,
+    seconds,
+    startedAt: new Date().toISOString(),
+  });
 }
 
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));

@@ -323,6 +323,27 @@ export const semanticSearch = (q: string) =>
     `/search/semantic?q=${encodeURIComponent(q)}`,
   );
 
+/* ── Growth ────────────────────────────────────────────────────────────—
+   Every field below is a conclusion the server reached. There is deliberately
+   no threshold table on this side to compare against.                       */
+
+export type Progress = {
+  totalMinutes: number;
+  streak: { current: number; longest: number; activeToday: boolean };
+  level: {
+    index: number;
+    title: string;
+    nextTitle: string | null;
+    progressToNext: number;
+    minutesToNext: number;
+  };
+  badges: { id: string; title: string; hint: string; earned: boolean }[];
+  history: { day: string; minutes: number }[];
+  recap: { due: boolean; daysAway: number };
+};
+
+export const getProgress = () => call<Progress>("/me/progress");
+
 export const getEdition = (editionId: string) =>
   call<EditionDetail>(`/editions/${encodeURIComponent(editionId)}`);
 

@@ -193,7 +193,15 @@ export interface ChildProfile {
  */
 export interface ListeningSession {
   id: string;
-  childProfileId: string;
+  /**
+   * Whose listening this was.
+   *
+   * A child profile when the kids player reported it, otherwise the account
+   * itself. Both are elapsed seconds actually listened, which is the only
+   * reason this table exists separately from `positions`.
+   */
+  childProfileId: string | null;
+  userId: string;
   editionId: string;
   /** `YYYY-MM-DD`, local — the unit both the cap and the report count in. */
   day: string;
@@ -365,6 +373,7 @@ function seed(): Db {
       {
         id: `ls_${uid()}`,
         childProfileId: child.id,
+        userId: user.id,
         editionId: edition.id,
         day: dayKey(when),
         seconds: mins * 60,

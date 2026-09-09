@@ -49,6 +49,7 @@ export async function POST(req: Request) {
     db.listening.push({
       id: `ls_${uid()}`,
       childProfileId: child.id,
+      userId: auth.user.id,
       editionId: body.editionId,
       day,
       seconds,
