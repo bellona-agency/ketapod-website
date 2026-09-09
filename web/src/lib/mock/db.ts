@@ -150,6 +150,63 @@ export interface Note {
   createdAt: string;
 }
 
+/**
+ * A child, as a subresource of the parent account.
+ *
+ * The spec puts this in a warning box and it is the one decision in the kids
+ * domain that cannot be walked back: `ChildProfile` carries `parentUserId` and
+ * is **not** a row in `users`. Ownership, payment, entitlement and privacy all
+ * resolve to the parent, so a child that were its own user would need an
+ * exception written at every one of those points.
+ *
+ * Everything a child touches therefore already belongs to the parent — the
+ * wallet that paid, the entitlement that grants, the device that plays.
+ */
+export interface ChildProfile {
+  id: string;
+  parentUserId: string;
+  name: string;
+  /** Drives the content filter; the spec keys the kids catalogue off age. */
+  age: number;
+  /** Daily screen-time cap in minutes. Null means uncapped. */
+  dailyCapMinutes: number | null;
+  /**
+   * Explicit parent decisions, by book slug.
+   *
+   * Blocked always wins. Allowed only matters when `approvedOnly` is set, which
+   * narrows the shelf from "anything age-appropriate" to "what I picked".
+   */
+  allowedBookSlugs: string[];
+  blockedBookSlugs: string[];
+  approvedOnly: boolean;
+  avatar: "fox" | "owl" | "whale" | "robot";
+  createdAt: string;
+}
+
+/**
+ * Minutes listened, per child per day.
+ *
+ * Its own append-only record rather than something derived from positions: a
+ * position is a bookmark. It says where the child is, not how long they were
+ * there, and it moves *backwards* when they replay a chapter. The daily cap and
+ * the weekly report both need elapsed time, which only this carries.
+ */
+export interface ListeningSession {
+  id: string;
+  childProfileId: string;
+  editionId: string;
+  /** `YYYY-MM-DD`, local — the unit both the cap and the report count in. */
+  day: string;
+  seconds: number;
+  startedAt: string;
+}
+
+/** The parent's PIN for leaving kids mode. */
+export interface KidsLock {
+  userId: string;
+  pin: string;
+}
+
 interface Db {
   users: User[];
   otps: OtpChallenge[];
@@ -161,6 +218,9 @@ interface Db {
   positions: ListeningPosition[];
   bookmarks: Bookmark[];
   notes: Note[];
+  children: ChildProfile[];
+  listening: ListeningSession[];
+  kidsLocks: KidsLock[];
 }
 
 /* ── Singleton ───────────────────────────────────────────────────────────—
@@ -248,6 +308,71 @@ function seed(): Db {
     updatedAt: iso(-1),
   }));
 
+  /* The parent also owns three kid-safe editions.
+     A child has no entitlements of their own — everything resolves to the
+     account that paid — so without these the shelf is correctly but uselessly
+     empty, and nothing in the kids surface can be demonstrated. */
+  const kidsOwned = BOOKS.flatMap((b) => b.editions)
+    .filter((e) => e.isKidsFriendly)
+    .slice(0, 3);
+
+  entitlements.push(
+    ...kidsOwned.map((e, i) => ({
+      id: `ent_${uid()}`,
+      userId: user.id,
+      editionId: e.id,
+      source: "purchase" as const,
+      grantedAt: iso(-22 + i),
+      expiresAt: null,
+    })),
+  );
+
+  /* One of them part-listened, so the child's shelf has a «ادامه شنیدن» card —
+     which the spec wants as the largest element on their first screen. */
+  if (kidsOwned[0]) {
+    positions.push({
+      userId: user.id,
+      editionId: kidsOwned[0].id,
+      positionSec: Math.round(kidsOwned[0].durationSec * 0.42),
+      updatedAt: iso(-1),
+    });
+  }
+
+  /* A child on the account from the start, so the parent panel and the kids
+     shelf both open onto something rather than onto three empty states. */
+  const child: ChildProfile = {
+    id: "chp_demo",
+    parentUserId: user.id,
+    name: "نیلا",
+    age: 7,
+    dailyCapMinutes: 45,
+    allowedBookSlugs: [],
+    blockedBookSlugs: [],
+    approvedOnly: false,
+    avatar: "fox",
+    createdAt: iso(-20),
+  };
+
+  /* Seven days of history for the weekly report, weighted so the chart has a
+     shape — a quiet midweek and a long weekend — instead of a flat bar. */
+  const kidEditions = BOOKS.flatMap((b) => b.editions).filter((e) => e.isKidsFriendly);
+  const minutesByDay = [12, 30, 0, 22, 41, 55, 18];
+  const listening: ListeningSession[] = minutesByDay.flatMap((mins, i) => {
+    if (mins === 0 || kidEditions.length === 0) return [];
+    const when = new Date(Date.now() - (6 - i) * 86_400_000);
+    const edition = kidEditions[i % kidEditions.length];
+    return [
+      {
+        id: `ls_${uid()}`,
+        childProfileId: child.id,
+        editionId: edition.id,
+        day: dayKey(when),
+        seconds: mins * 60,
+        startedAt: when.toISOString(),
+      },
+    ];
+  });
+
   return {
     users: [user],
     otps: [],
@@ -259,7 +384,22 @@ function seed(): Db {
     positions,
     bookmarks: [],
     notes: [],
+    children: [child],
+    listening,
+    kidsLocks: [{ userId: user.id, pin: "1234" }],
   };
+}
+
+/**
+ * `YYYY-MM-DD` in local time.
+ *
+ * Deliberately not `toISOString().slice(0, 10)`, which is UTC: for a listener
+ * in Tehran that rolls the day over at 03:30, so a bedtime story counts against
+ * tomorrow's cap and lands on the wrong bar of the weekly chart.
+ */
+export function dayKey(d: Date = new Date()) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 /* ── Derived reads ───────────────────────────────────────────────────────— */

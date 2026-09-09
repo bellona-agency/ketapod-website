@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import { PageBackdrop } from "@/components/primitives/PageBackdrop";
 import { Footer } from "@/components/sections/Footer";
 import { Header } from "@/components/sections/Header";
+import { SiteChrome } from "@/components/sections/SiteChrome";
 import { JsonLd, SITE_NAME } from "@/lib/seo";
 import { absolute, routes, SITE_URL } from "@/lib/routes";
 import "./globals.css";
@@ -74,9 +75,16 @@ export default function RootLayout({
           the whole page background on every navigation.
         */}
         <PageBackdrop />
-        <Header />
+        {/* Kids mode renders bare. Every link in the header and footer is a way
+            out of it, which would leave the parent's PIN guarding one door in a
+            room with no walls. */}
+        <SiteChrome>
+          <Header />
+        </SiteChrome>
         {children}
-        <Footer />
+        <SiteChrome>
+          <Footer />
+        </SiteChrome>
 
         {/* Organisation and site-search, emitted once for the whole site rather
             than per page — repeating them per route is a duplicate-entity

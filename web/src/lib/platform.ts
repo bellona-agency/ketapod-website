@@ -112,6 +112,55 @@ export type EditionDetail = {
   notes: { id: string; positionSec: number; body: string; createdAt: string }[];
 };
 
+export type ScreenTime = {
+  usedMinutes: number;
+  capMinutes: number | null;
+  remainingMinutes: number | null;
+  exhausted: boolean;
+};
+
+export type Child = {
+  id: string;
+  parentUserId: string;
+  name: string;
+  age: number;
+  dailyCapMinutes: number | null;
+  allowedBookSlugs: string[];
+  blockedBookSlugs: string[];
+  approvedOnly: boolean;
+  avatar: "fox" | "owl" | "whale" | "robot";
+  createdAt: string;
+};
+
+export type ChildSummary = Child & { screenTime: ScreenTime; weekMinutes: number };
+
+export type WeeklyReport = {
+  days: { day: string; minutes: number }[];
+  totalMinutes: number;
+  titles: { editionId: string; title: string; bookSlug: string; minutes: number }[];
+};
+
+export type KidsShelf = {
+  child: { id: string; name: string; age: number; avatar: Child["avatar"] };
+  screenTime: ScreenTime;
+  resume: KidsShelfItem | null;
+  items: KidsShelfItem[];
+  presetQuestions: string[];
+  policy: {
+    adsAllowed: boolean;
+    freeTextAssistant: boolean;
+    notifiesChildDevice: boolean;
+  };
+};
+
+export type KidsShelfItem = {
+  bookSlug: string;
+  title: string;
+  editionId: string;
+  durationSec: number;
+  positionSec: number;
+};
+
 export type LedgerEntry = {
   id: string;
   amountRial: number;
@@ -148,6 +197,66 @@ export const topUp = (amountRial: number) =>
   call<{ balanceRial: number }>("/me/wallet", {
     method: "POST",
     body: JSON.stringify({ amountRial }),
+  });
+
+/* ── Kids ──────────────────────────────────────────────────────────────——
+   The child's own calls carry `X-Profile-Id`. The spec asks for that header on
+   every request so the backend can apply the kids policy independently of the
+   client — which is only worth anything if the client actually sends it, so it
+   is set here rather than at each call site.                                  */
+
+export const PROFILE_HEADER = "X-Profile-Id";
+
+export const listChildren = () => call<{ children: ChildSummary[] }>("/me/children");
+
+export const getChild = (id: string) =>
+  call<{
+    child: Child;
+    screenTime: ScreenTime;
+    report: WeeklyReport;
+    shelf: { slug: string; title: string }[];
+  }>(`/me/children/${encodeURIComponent(id)}`);
+
+export const createChild = (input: {
+  name: string;
+  age: number;
+  dailyCapMinutes: number | null;
+  avatar: Child["avatar"];
+}) =>
+  call<{ child: Child }>("/me/children", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+
+export const updateChild = (id: string, patch: Record<string, unknown>) =>
+  call<{ child: Child; screenTime: ScreenTime }>(
+    `/me/children/${encodeURIComponent(id)}`,
+    { method: "PATCH", body: JSON.stringify(patch) },
+  );
+
+export const deleteChild = (id: string) =>
+  call<{ ok: boolean }>(`/me/children/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+
+export const getKidsShelf = (profileId: string) =>
+  call<KidsShelf>("/kids/shelf", { headers: { [PROFILE_HEADER]: profileId } });
+
+export const reportListening = (
+  profileId: string,
+  editionId: string,
+  seconds: number,
+) =>
+  call<{ screenTime: ScreenTime }>("/kids/listening", {
+    method: "POST",
+    headers: { [PROFILE_HEADER]: profileId },
+    body: JSON.stringify({ editionId, seconds }),
+  });
+
+export const unlockKids = (pin: string) =>
+  call<{ ok: boolean }>("/kids/unlock", {
+    method: "POST",
+    body: JSON.stringify({ pin }),
   });
 
 export const getEdition = (editionId: string) =>

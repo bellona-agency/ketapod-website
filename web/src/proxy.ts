@@ -26,5 +26,14 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/library/:path*", "/wallet/:path*", "/player/:path*"],
+  /* `/kids` itself stays public — it is the parent-facing landing page and one
+     of the site's indexable surfaces. Only `/kids/[childId]` is behind a
+     session, which the nested matcher expresses. */
+  matcher: [
+    "/library/:path*",
+    "/wallet/:path*",
+    "/player/:path*",
+    "/parent/:path*",
+    "/kids/:childId+",
+  ],
 };
