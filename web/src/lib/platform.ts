@@ -259,6 +259,70 @@ export const unlockKids = (pin: string) =>
     body: JSON.stringify({ pin }),
   });
 
+/* ── کتاب‌یار ──────────────────────────────────────────────────────────— */
+
+export type Citation = { startSec: number; endSec: number; text: string };
+
+export type AssistantAnswer = {
+  text: string;
+  citations: Citation[];
+  grounded: boolean;
+  provider: string;
+  context: { heardCues: number; upToSec: number };
+};
+
+export type Recap = {
+  bookTitle: string;
+  chaptersDone: number;
+  chaptersTotal: number;
+  currentChapter: string | null;
+  percent: number;
+  openingLine: string | null;
+  lastLine: string | null;
+  publicSummary: string;
+} | null;
+
+export type QuizItem = {
+  id: string;
+  prompt: string;
+  options: string[];
+  answer: string;
+  atSec: number;
+};
+
+export const askAssistant = (input: {
+  editionId: string;
+  chapterId: number | null;
+  currentTimeSec: number;
+  question: string;
+  profileId?: string;
+}) =>
+  call<AssistantAnswer>("/assistant/ask", {
+    method: "POST",
+    headers: input.profileId ? { [PROFILE_HEADER]: input.profileId } : undefined,
+    body: JSON.stringify(input),
+  });
+
+export const getRecap = (editionId: string, upToSec: number) =>
+  call<{ recap: Recap; quiz: QuizItem[] }>(
+    `/assistant/recap?editionId=${encodeURIComponent(editionId)}&upToSec=${Math.round(upToSec)}`,
+  );
+
+export type SemanticHit = {
+  slug: string;
+  title: string;
+  subtitle: string | null;
+  author: string | null;
+  summary: string;
+  priceRial: number;
+  score: number;
+};
+
+export const semanticSearch = (q: string) =>
+  call<{ query: string; results: SemanticHit[]; engine: string }>(
+    `/search/semantic?q=${encodeURIComponent(q)}`,
+  );
+
 export const getEdition = (editionId: string) =>
   call<EditionDetail>(`/editions/${encodeURIComponent(editionId)}`);
 

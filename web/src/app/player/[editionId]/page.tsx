@@ -14,6 +14,7 @@ import {
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AssistantPane } from "@/components/player/AssistantPane";
 import { TranscriptPane } from "@/components/player/TranscriptPane";
 import { usePlayer } from "@/hooks/usePlayer";
 import { ApiError, addBookmark, getEdition, type EditionDetail } from "@/lib/platform";
@@ -328,6 +329,13 @@ function Player({ detail }: { detail: EditionDetail }) {
 
         {/* ── Transcript, chapters, marks ── */}
         <aside className="flex flex-col gap-6">
+          <AssistantPane
+            editionId={detail.editionId}
+            chapterIndex={chapter?.index ?? null}
+            currentTime={currentTime}
+            onSeek={seekTo}
+          />
+
           <TranscriptPane
             cues={detail.transcript}
             currentTime={currentTime}
