@@ -1,0 +1,205 @@
+name: ketapod
+
+# کل پروژه در یک فایل.
+#
+# سرویس‌های زیرساخت (postgres, redis, minio) بدون profile هستند، پس
+# `docker compose up -d` همان کاری را می‌کند که تا امروز می‌کرد: فقط
+# زیرساخت بالا می‌آید و Go و Next را روی ماشین خودت اجرا می‌کنی.
+#
+# `docker compose --profile app up -d --build` کل استک را بالا می‌آورد:
+# مهاجرت، API، worker، scheduler و وب.
+#
+# `docker compose --profile seed up seed` داده نمونه را می‌ریزد.
+#
+# دیتابیس یکی است و هر دو تیم روی همین یکی کار می‌کنند — سرویس AI همکار
+# فقط DATABASE_URL را به همین اشاره می‌دهد (docs/10-ai-pipeline.md).
+
+x-backend-env: &backend-env
+  APP_ENV: ${APP_ENV:-development}
+  DATABASE_URL: postgres://ketapod:ketapod@postgres:5432/ketapod?sslmode=disable
+  REDIS_ADDR: redis:6379
+  REDIS_PASSWORD: ""
+  REDIS_DB: "0"
+  S3_ENDPOINT: minio:9000
+  S3_REGION: us-east-1
+  S3_BUCKET: ketapod-media
+  S3_ACCESS_KEY: ketapod
+  S3_SECRET_KEY: ketapod-secret
+  S3_USE_SSL: "false"
+  JWT_SECRET: ${JWT_SECRET:-dev-only-insecure-secret-change-me}
+  PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8080}
+  CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-*}
+  ADMIN_API_KEY: ${ADMIN_API_KEY:-dev-admin-key}
+  AI_SERVICE_BASE_URL: ${AI_SERVICE_BASE_URL:-}
+  AI_SERVICE_PROCESS_PATH: ${AI_SERVICE_PROCESS_PATH:-/api/v1/books/{bookId}/process}
+  AI_SERVICE_API_KEY: ${AI_SERVICE_API_KEY:-}
+  TTS_VOICE_ID: ${TTS_VOICE_ID:-voice_narrator_fa_ai}
+  TIMEZONE: ${TIMEZONE:-Asia/Tehran}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+
+services:
+  # ── زیرساخت ────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ketapod
+      POSTGRES_PASSWORD: ketapod
+      POSTGRES_DB: ketapod
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ketapod -d ketapod"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ketapod
+      MINIO_ROOT_PASSWORD: ketapod-secret
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── مهاجرت ─────────────────────────────────────────────────────────────
+  # یک‌بار اجرا می‌شود و تمام. API و worker منتظر تمام‌شدن موفقش می‌مانند،
+  # چون سرویسی که روی schema قدیمی بالا بیاید یا panic می‌کند یا — بدتر —
+  # ستون تازه را بی‌صدا نادیده می‌گیرد.
+  migrate:
+    build:
+      context: ./backend
+      args:
+        GOPROXY: ${GOPROXY:-https://proxy.golang.org,direct}
+    profiles: ["app"]
+    command: ["migrate", "up"]
+    environment: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  # ── اپلیکیشن ───────────────────────────────────────────────────────────
+  api:
+    build:
+      context: ./backend
+      args:
+        GOPROXY: ${GOPROXY:-https://proxy.golang.org,direct}
+    profiles: ["app"]
+    command: ["api"]
+    environment: *backend-env
+    ports:
+      - "${HTTP_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # worker جایی است که کار سنگین می‌افتد: تحویل به سرویس AI، و چسباندن
+  # فایل‌های صوتی با ffmpeg. به همین دلیل ایمیج ffmpeg دارد.
+  worker:
+    build:
+      context: ./backend
+      args:
+        GOPROXY: ${GOPROXY:-https://proxy.golang.org,direct}
+    profiles: ["app"]
+    command: ["worker"]
+    environment: *backend-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # یک نمونه و نه بیشتر: دو scheduler یعنی هر job دوبار.
+  scheduler:
+    build:
+      context: ./backend
+      args:
+        GOPROXY: ${GOPROXY:-https://proxy.golang.org,direct}
+    profiles: ["app"]
+    command: ["scheduler"]
+    environment: *backend-env
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      replicas: 1
+
+  web:
+    build:
+      context: ./web
+      args:
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org}
+        # مرورگر است که این آدرس را صدا می‌زند، نه کانتینر وب — پس
+        # localhost درست است و `api` غلط: نام سرویس فقط داخل شبکه داکر
+        # معنی دارد.
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8080}
+        NEXT_PUBLIC_ANALYTICS_ENABLED: ${NEXT_PUBLIC_ANALYTICS_ENABLED:-false}
+    profiles: ["app"]
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  # ── داده نمونه ─────────────────────────────────────────────────────────
+  seed:
+    build:
+      context: ./backend
+      args:
+        GOPROXY: ${GOPROXY:-https://proxy.golang.org,direct}
+    profiles: ["seed"]
+    command: ["seed"]
+    environment: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    restart: "no"
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
