@@ -1,3 +1,9 @@
+import {
+  claimWithSubscription,
+  consumeDiscount,
+  pendingDiscount,
+  subscriptionCovers,
+} from "@/lib/mock/commerce";
 import { balanceOf, db, findEditionById, hasEntitlement, uid } from "@/lib/mock/db";
 import { requireUser } from "@/lib/mock/session";
 
@@ -41,7 +47,35 @@ export async function POST(req: Request) {
     );
   }
 
-  const price = edition.priceRial;
+  /* An active subscription that reaches this edition adds it to the shelf for
+     nothing, and does so *before* any of the pricing below runs. Charging a
+     subscriber for a book their plan already covers is the single most damaging
+     bug this endpoint could have, so the path that avoids it is the first one. */
+  if (subscriptionCovers(user.id, edition)) {
+    const entitlement = claimWithSubscription(user.id, edition.id);
+    return Response.json(
+      {
+        entitlement,
+        viaSubscription: true,
+        priceRial: 0,
+        balanceRial: balanceOf(user.id),
+      },
+      { status: 201 },
+    );
+  }
+
+  const listPrice = edition.priceRial;
+
+  /* A percentage code redeemed earlier and not yet spent. Applied here rather
+     than at redemption because a discount is a property of a purchase, and
+     turning it into wallet credit at redemption time would let someone convert
+     «۳۰٪ تخفیف» into money and withdraw it. */
+  const discount = pendingDiscount(user.id);
+  const price =
+    discount && listPrice > 0
+      ? Math.round(listPrice * (1 - discount.percent / 100))
+      : listPrice;
+
   const balance = balanceOf(user.id);
 
   /* A zero-price edition is included in every tier per the catalogue types, so
@@ -78,11 +112,18 @@ export async function POST(req: Request) {
       userId: user.id,
       amountRial: -price,
       kind: "purchase",
-      memo: `خرید ${book.title}`,
+      /* The code is named in the memo so the discount is visible in the history
+         rather than showing up as a book that mysteriously cost less than its
+         list price. */
+      memo: discount ? `خرید ${book.title} (${discount.code})` : `خرید ${book.title}`,
       orderId,
       createdAt: now,
     });
   }
+
+  /* Spent, whatever it was worth. Leaving it would make one code good forever,
+     and the first person to notice would never pay full price again. */
+  if (discount) consumeDiscount(user.id);
 
   const entitlement = {
     id: `ent_${uid()}`,
@@ -96,7 +137,14 @@ export async function POST(req: Request) {
   db.entitlements.push(entitlement);
 
   return Response.json(
-    { orderId, entitlement, balanceRial: balanceOf(user.id) },
+    {
+      orderId,
+      entitlement,
+      listPriceRial: listPrice,
+      priceRial: price,
+      discountApplied: discount ? { code: discount.code, percent: discount.percent } : null,
+      balanceRial: balanceOf(user.id),
+    },
     { status: 201 },
   );
 }

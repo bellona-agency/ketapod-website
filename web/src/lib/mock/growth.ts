@@ -80,7 +80,7 @@ function longestRun(byDay: Map<string, number>) {
  * household habit, and the spec's streak is an account-level idea, so they are
  * summed rather than kept apart.
  */
-function dailyMinutes(userId: string) {
+export function dailyMinutes(userId: string) {
   const byDay = new Map<string, number>();
   for (const s of db.listening) {
     if (s.userId !== userId) continue;

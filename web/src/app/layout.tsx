@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import { SessionProvider } from "@/components/account/SessionProvider";
 import { PageBackdrop } from "@/components/primitives/PageBackdrop";
 import { Footer } from "@/components/sections/Footer";
 import { Header } from "@/components/sections/Header";
@@ -75,16 +76,30 @@ export default function RootLayout({
           the whole page background on every navigation.
         */}
         <PageBackdrop />
-        {/* Kids mode renders bare. Every link in the header and footer is a way
-            out of it, which would leave the parent's PIN guarding one door in a
-            room with no walls. */}
-        <SiteChrome>
-          <Header />
-        </SiteChrome>
-        {children}
-        <SiteChrome>
-          <Footer />
-        </SiteChrome>
+        {/*
+          The session is read once, here, and shared with everything below.
+
+          It wraps `children` as well as the header because the account screens
+          need the same object, and fetching `/me` per screen would mean the
+          balance in the header and the balance on the page disagreeing for as
+          long as one of the two requests was in flight.
+
+          This provider does not make the tree dynamic: it is a client component
+          resolving the session in the browser, so the catalogue pages above it
+          are still statically generated and still cacheable.
+        */}
+        <SessionProvider>
+          {/* Kids mode renders bare. Every link in the header and footer is a
+              way out of it, which would leave the parent's PIN guarding one
+              door in a room with no walls. */}
+          <SiteChrome>
+            <Header />
+          </SiteChrome>
+          {children}
+          <SiteChrome>
+            <Footer />
+          </SiteChrome>
+        </SessionProvider>
 
         {/* Organisation and site-search, emitted once for the whole site rather
             than per page — repeating them per route is a duplicate-entity

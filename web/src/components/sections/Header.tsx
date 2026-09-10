@@ -1,14 +1,14 @@
 "use client";
 
-import { LibraryBig, Menu, X } from "lucide-react";
+import { LibraryBig, LogIn, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { AccountMenu } from "@/components/account/AccountMenu";
+import { useSession } from "@/components/account/SessionProvider";
 import { BrandIcon, BrandMark } from "@/components/primitives/BrandMark";
-import { Cta } from "@/components/primitives/Cta";
-import { PRIMARY_CTA_LABEL } from "@/lib/content";
 import { trackEvent } from "@/lib/api";
-import { isActivePath, LEAD_HREF, NAV_LINKS, routes } from "@/lib/routes";
+import { isActivePath, NAV_LINKS, routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
 /**
@@ -30,6 +30,7 @@ export function Header() {
   const pathname = usePathname();
   const [condensed, setCondensed] = useState(false);
   const [open, setOpen] = useState(false);
+  const { me, status } = useSession();
 
   /*
    * `useScroll` + `useMotionValueEvent` did this before. A passive listener is
@@ -129,30 +130,56 @@ export function Header() {
           </nav>
 
           <div className="flex flex-1 items-center justify-end gap-2 xl:flex-none">
-            {/* Entry to the authenticated product. A single link rather than a
-                session-aware menu on purpose: the header stays a static part of
-                every SSG page, and `/library` already bounces a logged-out
-                visitor to `/login` and back again afterwards. */}
-            <Link
-              href="/library"
-              className="hidden h-12 items-center gap-2 rounded-full border border-line bg-card/70 px-5 text-[16px] font-medium text-ink transition-colors hover:border-violet-200 sm:inline-flex"
-            >
-              <LibraryBig className="size-4" strokeWidth={1.7} aria-hidden />
-              کتابخانه
-            </Link>
+            {/*
+              The auth corner.
 
-            <div className="hidden sm:block">
-              <Cta
-                label={PRIMARY_CTA_LABEL}
-                href={LEAD_HREF}
-                event="header_cta_clicked"
-                section="header"
-                element="header_cta"
-                variant="primary"
-                arrow={false}
-                className="h-12 min-h-12 px-6 text-[17px]"
+              Three states, and the third is why this is not a plain link. The
+              session is resolved in the browser after hydration — see
+              `SessionProvider` for why it cannot be resolved on the server
+              without giving up static catalogue pages — so there is a moment
+              where the answer is unknown. Rendering «ورود» during it would
+              flash "signed out" at a signed-in reader on every navigation, so
+              that moment renders a placeholder of the same width instead and
+              the row never reflows.
+            */}
+            {status === "loading" ? (
+              <div
+                className="hidden h-12 w-[168px] rounded-full bg-paper-2/70 sm:block"
+                aria-hidden
               />
-            </div>
+            ) : me ? (
+              <>
+                <Link
+                  href="/library"
+                  className="hidden h-12 items-center gap-2 rounded-full border border-line bg-card/70 px-5 text-[16px] font-medium text-ink transition-colors hover:border-violet-200 sm:inline-flex"
+                >
+                  <LibraryBig className="size-4" strokeWidth={1.7} aria-hidden />
+                  کتابخانه
+                </Link>
+                <AccountMenu me={me} />
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="hidden h-12 items-center gap-2 rounded-full border border-line bg-card/70 px-5 text-[16px] font-medium text-ink transition-colors hover:border-violet-200 sm:inline-flex"
+                >
+                  <LogIn className="size-4" strokeWidth={1.7} aria-hidden />
+                  ورود
+                </Link>
+                {/* Sign-up and sign-in are one screen — the spec's identity is a
+                    phone number and an OTP, so there is no second form to send
+                    people to. The two buttons differ in the promise they make,
+                    not in where they land: `?new=1` opens the same page with
+                    the wording of a first visit. */}
+                <Link
+                  href="/login?new=1"
+                  className="btn btn-primary hidden h-12 min-h-12 items-center px-6 text-[17px] sm:inline-flex"
+                >
+                  ثبت‌نام رایگان
+                </Link>
+              </>
+            )}
 
             <button
               type="button"
@@ -227,30 +254,60 @@ export function Header() {
               </Link>
             ))}
 
-            <Link
-              href="/library"
-              onClick={closeDrawer}
-              className="kp-drawer-item mt-2 flex items-center gap-3 rounded-md border border-line px-3 py-3.5 text-right text-[18px] font-medium text-ink transition-colors hover:bg-paper-2"
-              style={{ "--kp-delay": `${(0.12 + NAV_LINKS.length * 0.05).toFixed(2)}s` } as CSSProperties}
-            >
-              <LibraryBig className="size-5" strokeWidth={1.7} aria-hidden />
-              کتابخانه من
-            </Link>
+            {me && (
+              <Link
+                href="/library"
+                onClick={closeDrawer}
+                className="kp-drawer-item mt-2 flex items-center gap-3 rounded-md border border-line px-3 py-3.5 text-right text-[18px] font-medium text-ink transition-colors hover:bg-paper-2"
+                style={{ "--kp-delay": `${(0.12 + NAV_LINKS.length * 0.05).toFixed(2)}s` } as CSSProperties}
+              >
+                <LibraryBig className="size-5" strokeWidth={1.7} aria-hidden />
+                کتابخانه من
+              </Link>
+            )}
           </nav>
 
+          {/* The drawer's foot carries the same three states as the desktop
+              corner. While the session is unknown it shows nothing rather than
+              a placeholder — the drawer is only on screen because the visitor
+              opened it, by which time the fetch has long since resolved. */}
           <div className="border-t border-line p-4">
-            <Link
-              href={LEAD_HREF}
-              onClick={() => {
-                trackEvent("header_cta_clicked", "header", "drawer_cta", {
-                  target: LEAD_HREF,
-                });
-                closeDrawer();
-              }}
-              className="btn btn-primary w-full"
-            >
-              {PRIMARY_CTA_LABEL}
-            </Link>
+            {status === "loading" ? null : me ? (
+              <div className="grid gap-2">
+                <Link
+                  href="/account"
+                  onClick={closeDrawer}
+                  className="btn btn-primary w-full"
+                >
+                  حساب کاربری
+                </Link>
+                <p className="tnum text-center text-[13px] text-faint">
+                  {me.name ?? me.phone}
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-2">
+                <Link
+                  href="/login?new=1"
+                  onClick={() => {
+                    trackEvent("header_cta_clicked", "header", "drawer_signup", {
+                      target: "/login?new=1",
+                    });
+                    closeDrawer();
+                  }}
+                  className="btn btn-primary w-full"
+                >
+                  ثبت‌نام رایگان
+                </Link>
+                <Link
+                  href="/login"
+                  onClick={closeDrawer}
+                  className="flex h-12 w-full items-center justify-center rounded-lg border border-line text-[16px] font-medium text-ink transition-colors hover:bg-paper-2"
+                >
+                  ورود به حساب
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>

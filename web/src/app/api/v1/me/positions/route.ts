@@ -1,3 +1,4 @@
+import { settleReferral } from "@/lib/mock/commerce";
 import { dayKey, db, findEditionById, hasEntitlement, uid } from "@/lib/mock/db";
 import { requireUser } from "@/lib/mock/session";
 
@@ -91,6 +92,14 @@ export async function PUT(req: Request) {
 /** One row per account, edition and day; seconds accumulate into it. */
 function bankListening(userId: string, editionId: string, seconds: number) {
   const day = dayKey();
+
+  /* An invite pays out on the invitee's first real listening rather than on
+     their signup — see `settleReferral` for why. This is the earliest point at
+     which "they actually used it" is known. The call is idempotent through the
+     ledger, so running it on every write costs a scan and never a second
+     payment. */
+  settleReferral(userId);
+
   const row = db.listening.find(
     (s) =>
       s.userId === userId &&

@@ -1,3 +1,4 @@
+import { summariseAt } from "@/lib/mock/assistant";
 import { db, findEditionById, hasEntitlement, uid } from "@/lib/mock/db";
 import { requireUser } from "@/lib/mock/session";
 
@@ -15,6 +16,39 @@ import { requireUser } from "@/lib/mock/session";
  * the same sentence are two notes, and collapsing them would lose one.
  */
 
+/**
+ * Everything the account has marked, across every book.
+ *
+ * One list rather than a per-book fetch because the hub screen is the point:
+ * a note taken in one book is a thought the listener wants to find again, and
+ * they will not remember which book they were in when they had it.
+ */
+export async function GET(req: Request) {
+  const auth = await requireUser(req);
+  if (auth.response) return auth.response;
+  const { user } = auth;
+
+  const decorate = <T extends { editionId: string; createdAt: string }>(row: T) => {
+    const found = findEditionById(row.editionId);
+    return {
+      ...row,
+      bookSlug: found?.book.slug ?? null,
+      bookTitle: found?.book.title ?? "کتاب حذف‌شده",
+      voiceName: found?.voice?.name ?? null,
+    };
+  };
+
+  const bookmarks = db.bookmarks.filter((b) => b.userId === user.id).map(decorate);
+  const notes = db.notes.filter((n) => n.userId === user.id).map(decorate);
+  const byNewest = (a: { createdAt: string }, b: { createdAt: string }) =>
+    Date.parse(b.createdAt) - Date.parse(a.createdAt);
+
+  return Response.json({
+    bookmarks: bookmarks.sort(byNewest),
+    notes: notes.sort(byNewest),
+  });
+}
+
 export async function POST(req: Request) {
   const auth = await requireUser(req);
   if (auth.response) return auth.response;
@@ -26,6 +60,8 @@ export async function POST(req: Request) {
     label?: string;
     body?: string;
     kind?: "bookmark" | "note";
+    /** Ask for the smart summary. Off by default — it costs a model call. */
+    smart?: boolean;
   };
 
   const found = body.editionId ? findEditionById(body.editionId) : undefined;
@@ -69,8 +105,28 @@ export async function POST(req: Request) {
     positionSec: at,
     label: (body.label ?? "").trim() || formatStamp(at),
     createdAt: now,
+    summary: null as string | null,
+    summaryState: (body.smart ? "pending" : "none") as "none" | "pending" | "ready",
   };
   db.bookmarks.push(bookmark);
+
+  /* The spec's instruction, followed literally: «خلاصه در پس‌زمینه توسط worker
+     ساخته شود، نه هم‌زمان با کلیک کاربر». The response is sent immediately with
+     `summaryState: "pending"` and the text lands afterwards, so the button never
+     waits on the model.
+
+     A real deployment enqueues this on Redis and a worker picks it up. A timer
+     is the mock's stand-in for that queue — and it is deliberately not `await`ed,
+     which is why the handler returns before it runs. */
+  if (body.smart) {
+    setTimeout(() => {
+      const row = db.bookmarks.find((b) => b.id === bookmark.id);
+      if (!row) return; // deleted while the "worker" was thinking
+      row.summary = summariseAt(found.edition.id, at);
+      row.summaryState = "ready";
+    }, 1200);
+  }
+
   return Response.json({ bookmark, created: true }, { status: 201 });
 }
 

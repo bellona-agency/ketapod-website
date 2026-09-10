@@ -3,6 +3,7 @@
 import { ArrowRight, Loader2, ShieldCheck } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
+import { useSession } from "@/components/account/SessionProvider";
 import { ApiError, requestOtp, verifyOtp } from "@/lib/platform";
 
 /**
@@ -22,6 +23,15 @@ function LoginForm() {
   /* Where to land afterwards. A visitor bounced here from /library should end
      up at /library, not at a generic home. */
   const next = params.get("next") || "/library";
+  /* `?new=1` from the header's ثبت‌نام button, `?ref=` from an invite link.
+     Neither changes what happens — the spec's identity is a phone and an OTP,
+     so signing up and signing in are the same two steps. What `new` changes is
+     the promise on screen: someone who pressed «ثبت‌نام رایگان» and landed on a
+     heading that says «ورود» reasonably wonders whether they are in the right
+     place. */
+  const isSignup = params.get("new") === "1";
+  const referralCode = params.get("ref");
+  const { refresh } = useSession();
 
   const [step, setStep] = useState<"phone" | "code">("phone");
   const [phone, setPhone] = useState("");
@@ -66,11 +76,12 @@ function LoginForm() {
     setBusy(true);
     setError(null);
     try {
-      await verifyOtp(phone, code);
-      /* `refresh()` before navigating so the header re-reads the session it
-         renders from; without it the shell still shows the logged-out state
-         after the redirect. */
-      router.refresh();
+      await verifyOtp(phone, code, referralCode ?? undefined);
+      /* Re-read the session *before* navigating, so the header and the account
+         menu are already showing the signed-in state when the next screen
+         paints. `router.refresh()` alone does not do it: the session is held in
+         a client provider, not in the server render. */
+      await refresh();
       router.push(next);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "ارتباط برقرار نشد.");
@@ -90,12 +101,18 @@ function LoginForm() {
           </span>
 
           <h1 className="text-[24px] font-bold text-ink">
-            {step === "phone" ? "ورود به کتاپاد" : "کد را وارد کنید"}
+            {step === "code"
+              ? "کد را وارد کنید"
+              : isSignup
+                ? "ساخت حساب کتاپاد"
+                : "ورود به کتاپاد"}
           </h1>
           <p className="mt-2.5 text-[15px] leading-[1.8] text-muted">
-            {step === "phone"
-              ? "با شماره موبایل وارد شوید. رمزی در کار نیست — یک کد پیامک می‌شود."
-              : `کد شش‌رقمی به ${phone} فرستاده شد.`}
+            {step === "code"
+              ? `کد شش‌رقمی به ${phone} فرستاده شد.`
+              : isSignup
+                ? "فقط شماره موبایل لازم است. اگر قبلاً حساب داشته باشید، همین شماره واردتان می‌کند."
+                : "با شماره موبایل وارد شوید. رمزی در کار نیست — یک کد پیامک می‌شود."}
           </p>
 
           {step === "phone" ? (
@@ -116,7 +133,7 @@ function LoginForm() {
                 placeholder="09xxxxxxxxx"
                 className="tnum h-12 rounded-lg border border-line bg-paper-2 px-4 text-[16px] text-ink outline-none transition-colors focus:border-violet"
               />
-              <SubmitButton busy={busy} label="ارسال کد" />
+              <SubmitButton busy={busy} label={isSignup ? "ساخت حساب" : "ارسال کد"} />
             </form>
           ) : (
             <form onSubmit={submitCode} className="mt-6 flex flex-col gap-3">

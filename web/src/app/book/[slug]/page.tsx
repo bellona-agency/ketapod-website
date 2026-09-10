@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { BookGrid } from "@/components/catalog/BookCard";
 import { Breadcrumbs } from "@/components/catalog/Breadcrumbs";
+import { FavouriteButton } from "@/components/account/FavouriteButton";
 import { EditionPicker, type EditionView } from "@/components/catalog/EditionPicker";
 import { CoverArt } from "@/components/primitives/CoverArt";
 import { PageView } from "@/components/primitives/PageView";
@@ -149,9 +150,15 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
                   ))}
                 </div>
 
-                <h1 className="text-[32px] font-extrabold leading-[1.28] tracking-[-0.015em] text-ink sm:text-[42px] md:text-[50px]">
-                  {book.title}
-                </h1>
+                <div className="flex items-start gap-4">
+                  <h1 className="flex-1 text-[32px] font-extrabold leading-[1.28] tracking-[-0.015em] text-ink sm:text-[42px] md:text-[50px]">
+                    {book.title}
+                  </h1>
+                  {/* The one interactive island on an otherwise static page. It
+                      resolves its own state after hydration, so this page stays
+                      statically generated and indexable. */}
+                  <FavouriteButton bookSlug={book.slug} className="mt-2 shrink-0" />
+                </div>
 
                 {book.originalTitle && (
                   <p className="text-[17px] text-faint" dir="ltr">

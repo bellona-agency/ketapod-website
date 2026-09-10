@@ -28,13 +28,21 @@ export function proxy(request: NextRequest) {
 export const config = {
   /* `/kids` itself stays public — it is the parent-facing landing page and one
      of the site's indexable surfaces. Only `/kids/[childId]` is behind a
-     session, which the nested matcher expresses. */
+     session, which the nested matcher expresses.
+
+     `/gift/[code]` and `/join/[code]` are absent for the same reason and it is
+     a deliberate one: both are links sent to people who do not have an account
+     yet, and bouncing them to a login screen before they can see what they were
+     sent is how a gift link stops converting. Claiming needs a session; looking
+     does not. */
   matcher: [
     "/library/:path*",
     "/wallet/:path*",
     "/player/:path*",
     "/parent/:path*",
     "/progress/:path*",
+    "/account/:path*",
+    "/pay/:path*",
     "/kids/:childId+",
   ],
 };

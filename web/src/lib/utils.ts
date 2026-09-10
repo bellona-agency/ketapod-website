@@ -56,3 +56,43 @@ export function faFigure(display: string) {
     .replace(/(\d)\s*K\b/gi, "$1 هزار")
     .replace(/(\d)\s*M\b/gi, "$1 میلیون");
 }
+
+/**
+ * Rial in, Toman out.
+ *
+ * Every amount crossing the API is Rial, because that is the unit the payment
+ * gateways settle in and storing prices in the unit people quote them in is how
+ * a factor of ten eventually gets lost. Every amount on screen is Toman,
+ * because nobody in Iran says «صد هزار ریال». This function is the only place
+ * the conversion happens, so the two conventions can each stay absolute.
+ */
+export function fmtToman(rial: number) {
+  return `${Math.round(rial / 10).toLocaleString("fa-IR")} تومان`;
+}
+
+/** The bare number, for a row that supplies its own unit label. */
+export const fmtTomanBare = (rial: number) =>
+  Math.round(rial / 10).toLocaleString("fa-IR");
+
+/**
+ * «۳ روز پیش».
+ *
+ * `Intl.RelativeTimeFormat` rather than a hand-rolled ladder: it gets the
+ * Persian plural and the «پیش» placement right, and neither is guessable from
+ * the English.
+ */
+export function fmtAgo(iso: string) {
+  const rtf = new Intl.RelativeTimeFormat("fa-IR", { numeric: "auto" });
+  const diffMs = Date.parse(iso) - Date.now();
+  const units: [Intl.RelativeTimeFormatUnit, number][] = [
+    ["year", 31_536_000_000],
+    ["month", 2_592_000_000],
+    ["day", 86_400_000],
+    ["hour", 3_600_000],
+    ["minute", 60_000],
+  ];
+  for (const [unit, ms] of units) {
+    if (Math.abs(diffMs) >= ms) return rtf.format(Math.round(diffMs / ms), unit);
+  }
+  return "همین حالا";
+}

@@ -36,6 +36,17 @@ export interface User {
   createdAt: string;
   /** `creator` unlocks the studio tile; `admin` the moderation panel. */
   roles: ("listener" | "creator" | "publisher" | "org_admin" | "admin")[];
+  /**
+   * The user's own invite code.
+   *
+   * On the account rather than in a `referrals` table because it is one per
+   * user for the life of the account, and the spec's requirement — «لینک دعوت
+   * باید صفحه وب باز کند نه اپ» — means this code has to be resolvable by a
+   * page the invitee reaches before they have installed anything.
+   */
+  referralCode: string;
+  /** Set once, at signup, from the code the invitee arrived with. */
+  referredByUserId?: string;
 }
 
 /** A pending SMS challenge. Real deployments send this; the mock returns it. */
@@ -139,6 +150,18 @@ export interface Bookmark {
   positionSec: number;
   label: string;
   createdAt: string;
+  /**
+   * The "smart bookmark" of the feature matrix — a summary of what was being
+   * said at this second.
+   *
+   * The spec's note is the whole design: «خلاصه در پس‌زمینه توسط worker ساخته
+   * شود، نه هم‌زمان با کلیک کاربر». So a bookmark is created immediately with
+   * `summaryState: "pending"` and the text arrives afterwards; the button never
+   * waits on a model, because a bookmark that takes two seconds to appear is a
+   * bookmark the listener has already stopped trusting.
+   */
+  summary: string | null;
+  summaryState: "none" | "pending" | "ready";
 }
 
 export interface Note {
@@ -215,6 +238,190 @@ export interface KidsLock {
   pin: string;
 }
 
+/* ── The account's own settings ──────────────────────────────────────────— */
+
+/**
+ * Everything the listener can change about how the product behaves for them.
+ *
+ * One row rather than columns on `users` because these are preferences and
+ * those are identity: a preference can be reset, exported, or defaulted for a
+ * new device, and none of that should touch the row that owns the wallet.
+ *
+ * The notification flags carry the kids rule from the spec's warning box —
+ * «هیچ نوتیفیکیشنی به دستگاه کودک نرود --- همه به گوشی والد». There is no
+ * per-child notification setting anywhere in this file, and that is the reason.
+ */
+export interface UserPrefs {
+  userId: string;
+  /** Player defaults, applied when an edition is opened for the first time. */
+  playbackRate: number;
+  skipForwardSec: number;
+  skipBackSec: number;
+  autoplayNextChapter: boolean;
+  /** Which performance to pick when a book has several. */
+  preferredNarrator: "human" | "ai" | "any";
+  preferredDialect: string | null;
+  notify: {
+    renewal: boolean;
+    kidsActivity: boolean;
+    recap: boolean;
+    newRelease: boolean;
+  };
+}
+
+export type SubscriptionTier = "basic" | "plus" | "family";
+
+/**
+ * A running subscription.
+ *
+ * `autoRenew` is absent by design, not by omission. The spec's commerce row
+ * says «درگاه‌های ایرانی تمدید خودکار کامل ندارند؛ یادآوری تمدید با push و
+ * پیامک ساخته شود», so the period simply ends and a reminder goes out. Modelling
+ * an auto-renew flag would invite a renewal job that no gateway here can
+ * actually honour, and the first month it silently failed would look like theft.
+ */
+export interface Subscription {
+  id: string;
+  userId: string;
+  tier: SubscriptionTier;
+  status: "active" | "expired" | "cancelled";
+  startedAt: string;
+  currentPeriodEnd: string;
+  cancelledAt: string | null;
+}
+
+/**
+ * A payment in flight at the gateway.
+ *
+ * Its own row because the money leaves the browser and comes back through a
+ * callback the user's own tab does not control. Without a stored intent there
+ * is nothing to reconcile a callback against, and a duplicate callback would
+ * credit the wallet twice — which is why `status` moves out of `pending` once
+ * and `settle` refuses a second attempt.
+ */
+export interface PaymentIntent {
+  id: string;
+  userId: string;
+  amountRial: number;
+  purpose: "topup" | "subscription";
+  tier: SubscriptionTier | null;
+  status: "pending" | "paid" | "failed" | "cancelled";
+  /** Stands in for the bank's own reference, shown on the receipt. */
+  gatewayRef: string;
+  returnPath: string;
+  createdAt: string;
+  settledAt: string | null;
+}
+
+/**
+ * A redeemable code: discount, gift card, or promotional credit.
+ *
+ * All three are one table because they differ only in what redemption *does*,
+ * and the spec groups them in one row — «کد تخفیف، کارت هدیه، بن». Keeping them
+ * apart would mean three redemption endpoints that a user experiences as one
+ * box to type a code into.
+ */
+export interface Coupon {
+  code: string;
+  kind: "percent" | "giftcard" | "credit";
+  /** Percent 0–100 for `percent`, Rial for the other two. */
+  value: number;
+  maxRedemptions: number;
+  redeemedBy: string[];
+  expiresAt: string | null;
+  label: string;
+}
+
+/**
+ * A book bought for someone else.
+ *
+ * The claim is keyed on a code rather than on the recipient's account, because
+ * the spec wants the whole flow to work before the recipient exists: «هدیه کتاب
+ * به شخص دیگر --- جریان کاملاً وب‌محور با لینک دریافت». They follow a link, log
+ * in with OTP — creating the account at that moment — and the entitlement lands.
+ */
+export interface Gift {
+  id: string;
+  code: string;
+  fromUserId: string;
+  fromName: string;
+  toPhone: string | null;
+  editionId: string;
+  message: string;
+  priceRial: number;
+  claimedByUserId: string | null;
+  claimedAt: string | null;
+  createdAt: string;
+}
+
+/** A book on the wish list. Keyed on the book, not the edition — the listener
+ *  is saving a work, and has not yet chosen whose voice to hear it in. */
+export interface Favourite {
+  userId: string;
+  bookSlug: string;
+  createdAt: string;
+}
+
+/**
+ * برنامه مطالعاتی — a daily goal, and the reminder that carries it.
+ *
+ * The goal is minutes rather than chapters or pages: minutes are the unit the
+ * listening ledger already counts in, so progress against the plan is a read of
+ * data that exists rather than a second thing to keep in step.
+ */
+export interface StudyPlan {
+  userId: string;
+  dailyMinutes: number;
+  /** 0 = Saturday, matching the Persian week the UI renders. */
+  daysOfWeek: number[];
+  /** Local `HH:MM`; the reminder is a notification, never an SMS in the mock. */
+  reminderAt: string;
+  bookSlug: string | null;
+  targetDate: string | null;
+  createdAt: string;
+}
+
+/**
+ * An in-app notification.
+ *
+ * Always addressed to a `userId` — an account — and never to a child profile.
+ * That is rule four of the kids policy expressed in the schema instead of in a
+ * check: there is no column here that could carry a child's device, so a
+ * notification about a child's listening can only be delivered to the parent.
+ */
+export interface AppNotification {
+  id: string;
+  userId: string;
+  kind: "renewal" | "kids" | "recap" | "gift" | "plan" | "system";
+  title: string;
+  body: string;
+  href: string | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
+/**
+ * A PDF submitted for narration.
+ *
+ * The spec's production pipeline has nine stages and the listener is entitled
+ * to see which one their book is at, so `stage` is stored rather than inferred
+ * from `status`. Nothing here holds the file itself: this store is a
+ * demonstration of behaviour, and pretending to keep a hundred megabytes of PDF
+ * in memory would be the least honest thing in it.
+ */
+export interface NarrationRequest {
+  id: string;
+  userId: string;
+  title: string;
+  fileName: string;
+  sizeBytes: number;
+  voiceId: string;
+  stage: number;
+  status: "queued" | "processing" | "review" | "done" | "failed";
+  note: string | null;
+  createdAt: string;
+}
+
 interface Db {
   users: User[];
   otps: OtpChallenge[];
@@ -229,6 +436,24 @@ interface Db {
   children: ChildProfile[];
   listening: ListeningSession[];
   kidsLocks: KidsLock[];
+  prefs: UserPrefs[];
+  subscriptions: Subscription[];
+  payments: PaymentIntent[];
+  coupons: Coupon[];
+  gifts: Gift[];
+  favourites: Favourite[];
+  plans: StudyPlan[];
+  notifications: AppNotification[];
+  narrationRequests: NarrationRequest[];
+  /**
+   * A redeemed percentage code, held against the account until it is spent.
+   *
+   * A map rather than a table because at most one can be waiting: redeeming a
+   * second percentage code replaces the first, which is the behaviour every
+   * checkout in the country already has and the only one that avoids the
+   * question of how two discounts compose.
+   */
+  pendingDiscounts: Map<string, { percent: number; code: string }>;
 }
 
 /* ── Singleton ───────────────────────────────────────────────────────────—
@@ -264,6 +489,7 @@ function seed(): Db {
     name: "کاربر نمونه",
     createdAt: iso(-40),
     roles: ["listener", "creator"],
+    referralCode: "KETA-DEMO",
   };
 
   const owned = BOOKS.slice(0, 3)
@@ -382,6 +608,51 @@ function seed(): Db {
     ];
   });
 
+  /* A subscription three weeks in, so the renewal banner, the remaining-days
+     count and the «شامل اشتراک» badge on the catalogue all have a state to be
+     in that is neither "never subscribed" nor "expired". */
+  const subscription: Subscription = {
+    id: `sub_${uid()}`,
+    userId: user.id,
+    tier: "plus",
+    status: "active",
+    startedAt: iso(-21),
+    currentPeriodEnd: iso(9),
+    cancelledAt: null,
+  };
+
+  /* Codes a visitor can actually try. They are printed on the redeem screen —
+     there is no point hiding fixtures behind a guess. */
+  const coupons: Coupon[] = [
+    {
+      code: "KETAPOD30",
+      kind: "percent",
+      value: 30,
+      maxRedemptions: 100,
+      redeemedBy: [],
+      expiresAt: iso(30),
+      label: "۳۰٪ تخفیف روی خرید بعدی",
+    },
+    {
+      code: "HEDIYE500",
+      kind: "giftcard",
+      value: 500_000,
+      maxRedemptions: 1,
+      redeemedBy: [],
+      expiresAt: null,
+      label: "کارت هدیه ۵۰ هزار تومان",
+    },
+    {
+      code: "KETAB1404",
+      kind: "credit",
+      value: 200_000,
+      maxRedemptions: 500,
+      redeemedBy: [],
+      expiresAt: iso(60),
+      label: "بن نمایشگاه کتاب",
+    },
+  ];
+
   return {
     users: [user],
     otps: [],
@@ -396,7 +667,90 @@ function seed(): Db {
     children: [child],
     listening,
     kidsLocks: [{ userId: user.id, pin: "1234" }],
+    prefs: [defaultPrefs(user.id)],
+    subscriptions: [subscription],
+    payments: [],
+    coupons,
+    gifts: [],
+    favourites: BOOKS.slice(3, 5).map((b) => ({
+      userId: user.id,
+      bookSlug: b.slug,
+      createdAt: iso(-5),
+    })),
+    plans: [
+      {
+        userId: user.id,
+        dailyMinutes: 20,
+        daysOfWeek: [0, 1, 2, 3, 4],
+        reminderAt: "21:30",
+        bookSlug: BOOKS[0]?.slug ?? null,
+        targetDate: iso(45).slice(0, 10),
+        createdAt: iso(-14),
+      },
+    ],
+    notifications: [
+      {
+        id: `ntf_${uid()}`,
+        userId: user.id,
+        kind: "kids",
+        title: "نیلا امروز به سقف زمانش نزدیک شد",
+        body: "۴۱ دقیقه از ۴۵ دقیقه‌ی امروز استفاده شده است.",
+        href: "/parent/chp_demo",
+        readAt: null,
+        createdAt: iso(-0.4),
+      },
+      {
+        id: `ntf_${uid()}`,
+        userId: user.id,
+        kind: "renewal",
+        title: "اشتراک شما تا ۹ روز دیگر تمام می‌شود",
+        body: "تمدید خودکار نداریم؛ برای ادامه، خودتان تمدید کنید.",
+        href: "/account/subscription",
+        readAt: null,
+        createdAt: iso(-1),
+      },
+      {
+        id: `ntf_${uid()}`,
+        userId: user.id,
+        kind: "system",
+        title: "به کتاپاد خوش آمدید",
+        body: "کیف پول شما با هدیه‌ی خوش‌آمدگویی شارژ شد.",
+        href: "/wallet",
+        readAt: iso(-27),
+        createdAt: iso(-28),
+      },
+    ],
+    narrationRequests: [],
+    pendingDiscounts: new Map(),
   };
+}
+
+/**
+ * The out-of-the-box settings.
+ *
+ * A row is created on demand rather than at signup, so an account that predates
+ * this table still has defaults instead of a null.
+ */
+export function defaultPrefs(userId: string): UserPrefs {
+  return {
+    userId,
+    playbackRate: 1,
+    skipForwardSec: 30,
+    skipBackSec: 15,
+    autoplayNextChapter: true,
+    preferredNarrator: "any",
+    preferredDialect: null,
+    notify: { renewal: true, kidsActivity: true, recap: true, newRelease: false },
+  };
+}
+
+export function prefsOf(userId: string): UserPrefs {
+  let row = db.prefs.find((p) => p.userId === userId);
+  if (!row) {
+    row = defaultPrefs(userId);
+    db.prefs.push(row);
+  }
+  return row;
 }
 
 /**
@@ -450,6 +804,53 @@ export function hasEntitlement(userId: string, editionId: string) {
       e.editionId === editionId &&
       (e.expiresAt === null || Date.parse(e.expiresAt) > now),
   );
+}
+
+/**
+ * The subscription in force right now, or null.
+ *
+ * Expiry is evaluated on read for the same reason `hasEntitlement` does it: a
+ * period that ended an hour ago must stop granting anything immediately, and a
+ * status column swept by a nightly job would keep it alive until morning. A
+ * cancelled subscription still runs to the end of the paid period — cancelling
+ * stops the next payment, it does not take back the month already bought.
+ */
+export function activeSubscription(userId: string): Subscription | null {
+  const now = Date.now();
+  const found = db.subscriptions.find(
+    (s) => s.userId === userId && Date.parse(s.currentPeriodEnd) > now && s.status !== "expired",
+  );
+  return found ?? null;
+}
+
+/**
+ * Post a notification to an *account*.
+ *
+ * Everything that wants to tell the user something goes through here, which is
+ * what makes the kids rule enforceable: the signature takes a `userId` and
+ * there is no overload that takes a child profile. A caller reporting on a
+ * child's listening has to resolve the parent first, and the parent is the only
+ * address it can reach.
+ */
+export function notify(
+  userId: string,
+  kind: AppNotification["kind"],
+  title: string,
+  body: string,
+  href: string | null = null,
+) {
+  const row: AppNotification = {
+    id: `ntf_${uid()}`,
+    userId,
+    kind,
+    title,
+    body,
+    href,
+    readAt: null,
+    createdAt: new Date().toISOString(),
+  };
+  db.notifications.unshift(row);
+  return row;
 }
 
 /** Every edition in the catalogue, flattened, with its book and voice resolved. */

@@ -54,14 +54,26 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 
 /* ── Types the screens consume ───────────────────────────────────────────— */
 
+export type SubscriptionTier = "basic" | "plus" | "family";
+
 export type Me = {
   id: string;
   phone: string;
   name: string | null;
   roles: string[];
+  createdAt: string;
+  referralCode: string;
   walletBalanceRial: number;
   entitlementCount: number;
   deviceCount: number;
+  unreadNotifications: number;
+  subscription: {
+    tier: SubscriptionTier;
+    tierName: string;
+    status: "active" | "cancelled" | "expired";
+    currentPeriodEnd: string;
+    daysLeft: number;
+  } | null;
 };
 
 export type LibraryItem = {
@@ -177,11 +189,11 @@ export const requestOtp = (phone: string) =>
     { method: "POST", body: JSON.stringify({ phone }) },
   );
 
-export const verifyOtp = (phone: string, code: string) =>
-  call<{ user: { id: string; phone: string; name?: string } }>("/auth/otp/verify", {
-    method: "POST",
-    body: JSON.stringify({ phone, code }),
-  });
+export const verifyOtp = (phone: string, code: string, referralCode?: string) =>
+  call<{ user: { id: string; phone: string; name?: string }; isNewAccount: boolean }>(
+    "/auth/otp/verify",
+    { method: "POST", body: JSON.stringify({ phone, code, referralCode }) },
+  );
 
 export const getMe = () => call<Me>("/me");
 
@@ -382,3 +394,401 @@ export const putPosition = (editionId: string, positionSec: number) =>
       updatedAt: new Date().toISOString(),
     }),
   });
+
+/* ── The account panel ───────────────────────────────────────────────────—
+   Everything below backs `/account/*`. It is a thin layer on purpose: not one
+   of these functions decides anything. Prices, caps, refund eligibility and
+   plan coverage all arrive already computed, because the moment a screen works
+   one of them out for itself there are two versions of the rule and the Flutter
+   app will shortly add a third.                                             */
+
+export const updateProfile = (name: string) =>
+  call<{ id: string; name: string | null }>("/me", {
+    method: "PATCH",
+    body: JSON.stringify({ name }),
+  });
+
+export type Prefs = {
+  playbackRate: number;
+  skipForwardSec: number;
+  skipBackSec: number;
+  autoplayNextChapter: boolean;
+  preferredNarrator: "human" | "ai" | "any";
+  preferredDialect: string | null;
+  notify: { renewal: boolean; kidsActivity: boolean; recap: boolean; newRelease: boolean };
+};
+
+export const getPrefs = () => call<{ prefs: Prefs }>("/me/prefs");
+
+export const savePrefs = (patch: Partial<Prefs>) =>
+  call<{ prefs: Prefs }>("/me/prefs", { method: "PATCH", body: JSON.stringify(patch) });
+
+export type DeviceRow = {
+  id: string;
+  label: string;
+  lastSeenAt: string;
+  current: boolean;
+};
+
+export const getDevices = () =>
+  call<{
+    devices: DeviceRow[];
+    concurrentCap: number;
+    capSource: string;
+    upgradeTo: { id: SubscriptionTier; name: string; concurrentDevices: number }[];
+  }>("/me/devices");
+
+export const revokeDevice = (id: string) =>
+  call<{ ok: boolean; revokedSelf: boolean }>(
+    `/me/devices?id=${encodeURIComponent(id)}`,
+    { method: "DELETE" },
+  );
+
+export type Tier = {
+  id: SubscriptionTier;
+  name: string;
+  monthlyRial: number;
+  concurrentDevices: number;
+  childProfiles: number;
+  perks: string[];
+};
+
+export type SubscriptionState = {
+  subscription:
+    | {
+        id: string;
+        tier: SubscriptionTier;
+        tierName: string;
+        status: "active" | "cancelled" | "expired";
+        startedAt: string;
+        currentPeriodEnd: string;
+        cancelledAt: string | null;
+        daysLeft: number;
+      }
+    | null;
+  renewalDue: boolean;
+  tiers: Tier[];
+  balanceRial: number;
+  history: LedgerEntry[];
+};
+
+export const getSubscription = () => call<SubscriptionState>("/me/subscription");
+
+export const subscribe = (tier: SubscriptionTier) =>
+  call<{ balanceRial: number }>("/me/subscription", {
+    method: "POST",
+    body: JSON.stringify({ tier }),
+  });
+
+export const cancelSubscription = () =>
+  call<{ subscription: { currentPeriodEnd: string } }>("/me/subscription", {
+    method: "DELETE",
+  });
+
+/**
+ * Open a payment and get the URL to send the browser to.
+ *
+ * The caller navigates; it does not fetch the result. That is the whole point
+ * of a gateway — the money is authorised somewhere this code cannot see, and
+ * the answer arrives as a return trip rather than as a response to this call.
+ */
+export const openPayment = (input: {
+  purpose: "topup" | "subscription";
+  amountRial?: number;
+  tier?: SubscriptionTier;
+  returnPath?: string;
+}) =>
+  call<{ redirectUrl: string; intent: { id: string; amountRial: number } }>(
+    "/payments/intents",
+    { method: "POST", body: JSON.stringify(input) },
+  );
+
+export type PaymentIntentView = {
+  id: string;
+  amountRial: number;
+  purpose: "topup" | "subscription";
+  status: "pending" | "paid" | "failed" | "cancelled";
+  gatewayRef: string;
+  returnPath: string;
+};
+
+export const getPayment = (id: string) =>
+  call<{ intent: PaymentIntentView; tierName: string | null }>(
+    `/payments/intents/${encodeURIComponent(id)}`,
+  );
+
+export const settlePayment = (id: string, outcome: "paid" | "failed" | "cancelled") =>
+  call<{ intent: PaymentIntentView; balanceRial: number; warning?: string }>(
+    `/payments/intents/${encodeURIComponent(id)}`,
+    { method: "POST", body: JSON.stringify({ outcome }) },
+  );
+
+export type OrderRow = {
+  id: string;
+  editionId: string;
+  bookSlug: string | null;
+  bookTitle: string;
+  voiceName: string | null;
+  priceRial: number;
+  status: "paid" | "refunded";
+  createdAt: string;
+  progress: number;
+  refundable: boolean;
+  refundBlockedBecause: string | null;
+};
+
+export const getOrders = () =>
+  call<{
+    orders: OrderRow[];
+    policy: { windowDays: number; maxProgressPercent: number };
+  }>("/me/orders");
+
+export const refundOrder = (orderId: string) =>
+  call<{ balanceRial: number }>("/me/orders", {
+    method: "POST",
+    body: JSON.stringify({ orderId }),
+  });
+
+export type RedeemOk =
+  | { kind: "credit"; amountRial: number; label: string; balanceRial: number }
+  | { kind: "percent"; percent: number; label: string };
+
+export const getPendingDiscount = () =>
+  call<{ pending: { percent: number; code: string } | null }>("/me/redeem");
+
+export const redeemCode = (code: string) =>
+  call<RedeemOk>("/me/redeem", { method: "POST", body: JSON.stringify({ code }) });
+
+export type GiftRow = {
+  id: string;
+  code: string;
+  bookTitle: string;
+  bookSlug: string | null;
+  toPhone: string | null;
+  message: string;
+  priceRial: number;
+  claimedAt: string | null;
+  createdAt: string;
+  claimPath: string;
+};
+
+export const getGifts = () =>
+  call<{ sent: GiftRow[]; received: GiftRow[] }>("/me/gifts");
+
+export const sendGift = (input: {
+  editionId: string;
+  toPhone?: string;
+  message?: string;
+}) =>
+  call<{ gift: { code: string }; bookTitle: string; claimPath: string }>("/me/gifts", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+
+export type GiftPreview = {
+  gift: {
+    code: string;
+    fromName: string;
+    message: string;
+    claimed: boolean;
+    reserved: boolean;
+  };
+  book: {
+    slug: string;
+    title: string;
+    author: string | null;
+    durationSec: number;
+    voiceName: string | null;
+  } | null;
+};
+
+export const previewGift = (code: string) =>
+  call<GiftPreview>(`/gifts/${encodeURIComponent(code)}`);
+
+export const claimGift = (code: string) =>
+  call<{ ok: true; bookTitle: string | null }>(`/gifts/${encodeURIComponent(code)}`, {
+    method: "POST",
+  });
+
+export type FavouriteItem = {
+  bookSlug: string;
+  title: string;
+  subtitle: string | null;
+  author: string | null;
+  editionCount: number;
+  fromRial: number;
+  owned: boolean;
+  addedAt: string;
+};
+
+export const getFavourites = () =>
+  call<{ items: FavouriteItem[]; slugs: string[] }>("/me/favourites");
+
+export const addFavourite = (bookSlug: string) =>
+  call<{ created: boolean }>("/me/favourites", {
+    method: "POST",
+    body: JSON.stringify({ bookSlug }),
+  });
+
+export const removeFavourite = (bookSlug: string) =>
+  call<{ ok: boolean }>(`/me/favourites?bookSlug=${encodeURIComponent(bookSlug)}`, {
+    method: "DELETE",
+  });
+
+export type MarkRow = {
+  id: string;
+  editionId: string;
+  bookSlug: string | null;
+  bookTitle: string;
+  voiceName: string | null;
+  positionSec: number;
+  createdAt: string;
+  label?: string;
+  body?: string;
+  summary?: string | null;
+  summaryState?: "none" | "pending" | "ready";
+};
+
+export const getMarks = () =>
+  call<{ bookmarks: MarkRow[]; notes: MarkRow[] }>("/me/bookmarks");
+
+export const deleteMark = (id: string) =>
+  call<{ ok: boolean }>(`/me/bookmarks?id=${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+
+/** `smart` asks for the background summary. See the bookmarks handler for why
+ *  the summary is not in the response. */
+export const addSmartBookmark = (
+  editionId: string,
+  positionSec: number,
+  label?: string,
+) =>
+  call<{ bookmark: MarkRow; created: boolean }>("/me/bookmarks", {
+    method: "POST",
+    body: JSON.stringify({ editionId, positionSec, label, kind: "bookmark", smart: true }),
+  });
+
+export type StudyPlanState = {
+  plan: {
+    dailyMinutes: number;
+    daysOfWeek: number[];
+    reminderAt: string;
+    bookSlug: string | null;
+    targetDate: string | null;
+  } | null;
+  dayNames: string[];
+  today: {
+    minutes: number;
+    scheduled?: boolean;
+    goalMet?: boolean;
+    remainingMinutes?: number;
+  };
+  book?: {
+    slug: string;
+    title: string;
+    percent: number | null;
+    remainingMinutes: number | null;
+    sessionsNeeded: number | null;
+    estimatedFinish: string | null;
+  } | null;
+};
+
+export const getPlan = () => call<StudyPlanState>("/me/plan");
+
+export const savePlan = (input: {
+  dailyMinutes: number;
+  daysOfWeek: number[];
+  reminderAt: string;
+  bookSlug: string | null;
+}) =>
+  call<{ plan: StudyPlanState["plan"] }>("/me/plan", {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+
+export const deletePlan = () => call<{ ok: boolean }>("/me/plan", { method: "DELETE" });
+
+export type NotificationRow = {
+  id: string;
+  kind: "renewal" | "kids" | "recap" | "gift" | "plan" | "system";
+  title: string;
+  body: string;
+  href: string | null;
+  readAt: string | null;
+  createdAt: string;
+};
+
+export const getNotifications = () =>
+  call<{ items: NotificationRow[]; unread: number }>("/me/notifications");
+
+export const markNotificationsRead = (input: { id?: string; all?: boolean }) =>
+  call<{ unread: number }>("/me/notifications", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+
+export const clearNotifications = () =>
+  call<{ ok: boolean }>("/me/notifications", { method: "DELETE" });
+
+export type ReferralState = {
+  code: string;
+  invitePath: string;
+  rewardRial: number;
+  earnedRial: number;
+  invited: { phone: string; joinedAt: string; activated: boolean }[];
+};
+
+export const getReferrals = () => call<ReferralState>("/me/referrals");
+
+export type NarrationRow = {
+  id: string;
+  title: string;
+  fileName: string;
+  sizeBytes: number;
+  voiceName: string | null;
+  stage: number;
+  stageName: string;
+  stageCount: number;
+  status: "queued" | "processing" | "review" | "done" | "failed";
+  note: string | null;
+  createdAt: string;
+};
+
+export const getNarrationRequests = () =>
+  call<{ items: NarrationRow[]; stages: string[] }>("/me/narration-requests");
+
+/**
+ * Upload a PDF.
+ *
+ * Bypasses `call` because the body is `FormData`, and `call` sets a JSON
+ * content-type. Letting the browser set it here is not a style choice: a
+ * multipart body needs a boundary parameter that only the browser knows, and
+ * overriding the header strips it and makes the body unparseable.
+ */
+export async function uploadForNarration(input: {
+  file: File;
+  title: string;
+  voiceId: string;
+}) {
+  const form = new FormData();
+  form.set("file", input.file);
+  form.set("title", input.title);
+  form.set("voiceId", input.voiceId);
+
+  const res = await fetch(`${PLATFORM_BASE}/api/v1/me/narration-requests`, {
+    method: "POST",
+    credentials: "include",
+    body: form,
+  });
+  const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      String(body.error ?? "unknown"),
+      String(body.message ?? "بارگذاری انجام نشد."),
+      body,
+    );
+  }
+  return body as { request: NarrationRow };
+}

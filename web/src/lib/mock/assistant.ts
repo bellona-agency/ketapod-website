@@ -234,6 +234,37 @@ export function recap(editionId: string, upToSec: number) {
 }
 
 /**
+ * A one-line description of what was being said at a given second.
+ *
+ * This is the text behind the «Bookmark هوشمند با خلاصه» row of the feature
+ * matrix. It reads a small window *ending* at the mark rather than centred on
+ * it: the listener pressed the button because of something they had just heard,
+ * so the sentences after the mark are not yet part of what they were reacting
+ * to — and on a first listen, including them would be a spoiler attached to
+ * their own bookmark.
+ */
+export function summariseAt(editionId: string, atSec: number) {
+  const found = findEditionById(editionId);
+  if (!found) return null;
+
+  const chapter = found.edition.chapters.find(
+    (c) => atSec >= c.startSec && atSec < c.endSec,
+  );
+
+  const window = found.edition.transcriptSample.filter(
+    (c) => c.endSec <= atSec && c.endSec > atSec - 90,
+  );
+  const lines = window.slice(-2).map((c) => c.text.trim());
+
+  if (lines.length === 0) {
+    /* No transcript reached this second. Naming the chapter is still a truthful
+       answer and a useful one; inventing a summary would not be either. */
+    return chapter ? `در «${chapter.title}»` : null;
+  }
+  return `${chapter ? `«${chapter.title}» — ` : ""}${lines.join(" ")}`;
+}
+
+/**
  * Quiz questions from heard content.
  *
  * Cloze deletion over the transcript: take a distinctive sentence, blank its

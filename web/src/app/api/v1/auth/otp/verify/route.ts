@@ -1,4 +1,5 @@
-import { db, uid } from "@/lib/mock/db";
+import { attachReferral, makeReferralCode } from "@/lib/mock/commerce";
+import { db, notify, uid, type User } from "@/lib/mock/db";
 import { SESSION_COOKIE, issueSession } from "@/lib/mock/session";
 import { normalisePhone } from "../request/route";
 
@@ -18,9 +19,13 @@ import { normalisePhone } from "../request/route";
 const MAX_ATTEMPTS = 5;
 
 export async function POST(req: Request) {
-  const { phone, code } = (await req.json().catch(() => ({}))) as {
+  const { phone, code, referralCode } = (await req.json().catch(() => ({}))) as {
     phone?: string;
     code?: string;
+    /* Carried through from `/join/[code]`. Ignored for an existing account —
+       an invite rewards bringing someone new, not re-labelling someone who was
+       already here. */
+    referralCode?: string;
   };
 
   const normalised = normalisePhone(phone ?? "");
@@ -58,15 +63,32 @@ export async function POST(req: Request) {
 
   db.otps = db.otps.filter((o) => o.phone !== normalised);
 
-  let user = db.users.find((u) => u.phone === normalised);
-  if (!user) {
-    user = {
-      id: `usr_${uid()}`,
-      phone: normalised,
-      createdAt: new Date().toISOString(),
-      roles: ["listener"],
-    };
-    db.users.push(user);
+  const existing = db.users.find((u) => u.phone === normalised);
+  const isNewAccount = !existing;
+
+  const user: User =
+    existing ??
+    (() => {
+      const created: User = {
+        id: `usr_${uid()}`,
+        phone: normalised,
+        createdAt: new Date().toISOString(),
+        roles: ["listener"],
+        referralCode: makeReferralCode(),
+      };
+      db.users.push(created);
+      return created;
+    })();
+
+  if (isNewAccount) {
+    if (referralCode) attachReferral(user.id, referralCode);
+    notify(
+      user.id,
+      "system",
+      "به کتاپاد خوش آمدید",
+      "کتابخانه‌ی شما آماده است. اولین کتاب را انتخاب کنید.",
+      "/books",
+    );
   }
 
   const session = issueSession(user, req.headers.get("user-agent") ?? "web");
@@ -75,7 +97,10 @@ export async function POST(req: Request) {
     user: { id: user.id, phone: user.phone, name: user.name, roles: user.roles },
     accessToken: session.accessToken,
     refreshToken: session.refreshToken,
-    isNewAccount: db.users.length > 0 && !user.name,
+    /* Whether the row was created *just now*, not whether it lacks a name. The
+       previous check called any nameless account new, so a returning listener
+       who had never set a display name was sent through onboarding every time. */
+    isNewAccount,
   });
 
   /* `lax` rather than `strict`: a link from an SMS or an email must arrive
