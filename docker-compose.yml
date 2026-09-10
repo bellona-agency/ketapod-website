@@ -11,6 +11,11 @@ name: ketapod
 #
 # `docker compose --profile seed up seed` داده نمونه را می‌ریزد.
 #
+# `docker compose --profile pm up -d --build` ابزار داخلی مدیریت پروژه را
+# بالا می‌آورد (pmapi + pmweb). پروفایل جداست چون این ابزار تیم است، نه
+# محصول: کسی که فقط روی اپ کار می‌کند لازم نیست بالایش بیاورد، و افتادنش
+# هیچ ربطی به API مشتری‌ها ندارد.
+#
 # دیتابیس یکی است و هر دو تیم روی همین یکی کار می‌کنند — سرویس AI همکار
 # فقط DATABASE_URL را به همین اشاره می‌دهد (docs/10-ai-pipeline.md).
 
@@ -34,6 +39,35 @@ x-backend-env: &backend-env
   AI_SERVICE_PROCESS_PATH: ${AI_SERVICE_PROCESS_PATH:-/api/v1/books/{bookId}/process}
   AI_SERVICE_API_KEY: ${AI_SERVICE_API_KEY:-}
   TTS_VOICE_ID: ${TTS_VOICE_ID:-voice_narrator_fa_ai}
+  TIMEZONE: ${TIMEZONE:-Asia/Tehran}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+
+# ابزار داخلی مدیریت پروژه. همان دیتابیس و همان object storage، ولی
+# اسکیمای خودش (pm)، نشست‌های خودش و — مهم‌تر از همه — کلید امضای خودش:
+# اگر PM_JWT_SECRET با JWT_SECRET یکی باشد، توکن یک شنونده اینجا هم
+# پذیرفته می‌شود، چون claim فقط یک uuid است و نمی‌گوید از کدام جدول آمده.
+x-pm-env: &pm-env
+  APP_ENV: ${APP_ENV:-development}
+  DATABASE_URL: postgres://ketapod:ketapod@postgres:5432/ketapod?sslmode=disable
+  REDIS_ADDR: redis:6379
+  REDIS_PASSWORD: ""
+  PM_REDIS_DB: "1"
+  S3_ENDPOINT: minio:9000
+  S3_REGION: us-east-1
+  S3_BUCKET: ketapod-media
+  S3_ACCESS_KEY: ketapod
+  S3_SECRET_KEY: ketapod-secret
+  S3_USE_SSL: "false"
+  PM_JWT_SECRET: ${PM_JWT_SECRET:-dev-only-insecure-pm-secret-change-me}
+  PM_APP_BASE_URL: ${PM_APP_BASE_URL:-http://localhost:3001}
+  PM_CORS_ALLOWED_ORIGINS: ${PM_CORS_ALLOWED_ORIGINS:-*}
+  # بدون SMTP، لینک دعوت در پاسخ API برمی‌گردد تا مدیر خودش بفرستد.
+  SMTP_HOST: ${SMTP_HOST:-}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_USERNAME: ${SMTP_USERNAME:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  SMTP_FROM: ${SMTP_FROM:-}
+  SMTP_FROM_NAME: ${SMTP_FROM_NAME:-کتاپاد}
   TIMEZONE: ${TIMEZONE:-Asia/Tehran}
   LOG_LEVEL: ${LOG_LEVEL:-info}
 
@@ -186,6 +220,69 @@ services:
       - "${WEB_PORT:-3000}:3000"
     depends_on:
       - api
+    restart: unless-stopped
+
+  # ── ابزار داخلی مدیریت پروژه ───────────────────────────────────────────
+  #
+  # باینری جدا از api، پس یک دیپلوی بد روی تخته کارها نمی‌تواند پخش صوت
+  # را بخواباند — و مهم‌تر، یک بعدازظهر بد روی API مشتری‌ها نمی‌تواند
+  # تخته‌ای را که تیم دارد با آن همان مشکل را حل می‌کند از دستش بگیرد.
+  pmapi:
+    build:
+      context: ./backend
+      args:
+        GOPROXY: ${GOPROXY:-https://proxy.golang.org,direct}
+    profiles: ["pm"]
+    command: ["pmapi"]
+    environment: *pm-env
+    ports:
+      - "${PM_HTTP_PORT:-8090}:8090"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      pmmigrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8090/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # همان مهاجرت‌ها، با یک سرویس جدا چون profile «pm» بدون profile «app»
+  # هم باید بالا بیاید. goose خودش نسخه‌ها را می‌شناسد، پس اجرای دوباره
+  # بی‌ضرر است.
+  pmmigrate:
+    build:
+      context: ./backend
+      args:
+        GOPROXY: ${GOPROXY:-https://proxy.golang.org,direct}
+    profiles: ["pm"]
+    command: ["migrate", "up"]
+    environment: *pm-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  pmweb:
+    build:
+      context: ./pm-web
+      args:
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org}
+        # مرورگر این را صدا می‌زند، نه کانتینر — پس localhost درست است و
+        # `pmapi` غلط. در باندل کلاینت بیک می‌شود، یعنی عوض‌کردنش build
+        # دوباره می‌خواهد نه restart.
+        NEXT_PUBLIC_PM_API_BASE_URL: ${NEXT_PUBLIC_PM_API_BASE_URL:-http://localhost:8090}
+    profiles: ["pm"]
+    ports:
+      - "${PM_WEB_PORT:-3001}:3001"
+    depends_on:
+      - pmapi
     restart: unless-stopped
 
   # ── داده نمونه ─────────────────────────────────────────────────────────

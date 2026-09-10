@@ -43,7 +43,8 @@ RUN go build -ldflags="-s -w" -o /out/api       ./cmd/api      && \
     go build -ldflags="-s -w" -o /out/worker    ./cmd/worker   && \
     go build -ldflags="-s -w" -o /out/scheduler ./cmd/scheduler && \
     go build -ldflags="-s -w" -o /out/migrate   ./cmd/migrate  && \
-    go build -ldflags="-s -w" -o /out/seed      ./cmd/seed
+    go build -ldflags="-s -w" -o /out/seed      ./cmd/seed     && \
+    go build -ldflags="-s -w" -o /out/pmapi     ./cmd/pmapi
 
 # ── runtime ──────────────────────────────────────────────────────────────
 FROM alpine:3.21

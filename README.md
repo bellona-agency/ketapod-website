@@ -4,8 +4,9 @@
 همکار که روی **همان دیتابیس** کار می‌کند.
 
 ```
-backend/   هسته Go — API، worker، scheduler، مهاجرت‌ها
+backend/   هسته Go — API، worker، scheduler، مهاجرت‌ها، و pmapi
 web/       وب عمومی Next.js + پنل تولید محتوا
+pm-web/    تخته کارها — ابزار داخلی مدیریت پروژه تیم
 design/    بوم طراحی
 ```
 
@@ -26,6 +27,22 @@ docker compose --profile app up -d --build
 | پنل تولید محتوا | http://localhost:3000/admin/books |
 | API | http://localhost:8080/api/v1 |
 | کنسول MinIO | http://localhost:9001 |
+
+ابزار داخلی مدیریت پروژه پروفایل خودش را دارد، چون محصول نیست و افتادنش
+هیچ ربطی به API مشتری‌ها ندارد:
+
+```bash
+docker compose --profile pm up -d --build
+```
+
+| سرویس | آدرس |
+|---|---|
+| تخته کارها | http://localhost:3001 |
+| API تخته کارها | http://localhost:8090/api/v1 |
+
+اولین بار که بازش می‌کنی، فرم ورود به‌جای رمز، ساختن حساب مالک را
+می‌پرسد؛ بعد از آن ورود فقط با دعوت است. هویتش مستقل از حساب کاربری سایت
+است (schema جدای `pm`، JWT با کلید جدا).
 
 داده نمونه (کتاب‌ها، گوینده‌ها، کلیپ‌های صوتی):
 
@@ -52,12 +69,18 @@ make run-scheduler
 cd web && cp .env.example .env.local && npm install && npm run dev   # :3000
 ```
 
+تخته کارها:
+
+```bash
+cd backend && go run ./cmd/pmapi                                     # :8090
+cd pm-web && npm install && npm run dev                              # :3001
+```
+
 ## دیتابیس مشترک با سرویس AI
 
 از مهاجرت `00014` جدول‌های سرویس AI در schema `public` همین دیتابیس‌اند؛ آن
-سرویس فقط `DATABASE_URL` را به `ketapod` می‌دهد. قاعده مالکیت (goose مالک
-schemaهای ما، alembic مالک `public`) و قرارداد تحویل کار در
-[`docs/10-ai-pipeline.md`](docs/10-ai-pipeline.md).
+سرویس فقط `DATABASE_URL` را به `ketapod` می‌دهد. قاعده مالکیت: goose مالک
+schemaهای ما (از جمله `pm`)، alembic مالک `public`.
 
 مسیر کامل یک کتاب: آپلود در پنل → ذخیره در دیتابیس و object storage → تحویل به
 سرویس AI → OCR و پردازش متن و خلاصه → TTS → ساخت خودکار AudioEdition در
@@ -71,9 +94,5 @@ cd backend && make test-unit && make test-contract
 
 ```bash
 cd web && npx tsc --noEmit && npx eslint . && npm run build
+cd pm-web && npx tsc --noEmit && npx eslint . && npm run build
 ```
-
-## مستندات
-
-`docs/README.md` نقشه راه است. برای شروع: `01-context.md`، بعد
-`04-architecture.md` (بک‌اند) یا `06-frontend.md` (فرانت).

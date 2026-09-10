@@ -2,17 +2,22 @@ SHELL := /bin/bash
 -include .env
 export
 
-.PHONY: build run-api run-worker run-scheduler \
+.PHONY: build run-api run-worker run-scheduler run-pmapi \
 	migrate-up migrate-down migrate-status migrate-create \
 	sqlc-generate oapi-generate api-docs generate \
 	seed test test-unit test-integration tidy \
-	docker-up docker-down docker-logs docker-app
+	docker-up docker-down docker-logs docker-app docker-pm
 
 build:
 	go build ./...
 
 run-api:
 	go run ./cmd/api
+
+# ابزار داخلی مدیریت پروژه. باینری جداست تا افتادنش هیچ ربطی به API
+# مشتری‌ها نداشته باشد و برعکس — docs/11-pm-tool.md
+run-pmapi:
+	go run ./cmd/pmapi
 
 run-worker:
 	go run ./cmd/worker
@@ -94,3 +99,7 @@ docker-logs:
 # کل استک داخل داکر، شامل API، worker، scheduler و وب.
 docker-app:
 	$(COMPOSE) --profile app up -d --build
+
+# تخته کارها. پروفایل جدا چون ابزار تیم است، نه محصول.
+docker-pm:
+	$(COMPOSE) --profile pm up -d --build

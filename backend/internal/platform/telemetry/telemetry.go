@@ -79,3 +79,17 @@ func (r *statusRecorder) Write(b []byte) (int, error) {
 	r.written += int64(n)
 	return n, err
 }
+
+// Unwrap is the Go 1.20+ contract for a wrapping ResponseWriter: it lets
+// http.NewResponseController reach the real writer's Flush, Hijack and
+// deadline methods through this one.
+//
+// Without it, every handler that streams sees a writer that is not an
+// http.Flusher and has to either give up or write blind. That is not
+// theoretical: the pm tool's SSE endpoint returned 500 for exactly this
+// reason, because a plain `w.(http.Flusher)` assertion fails once this
+// middleware is in the chain — and it is in the chain for every route in
+// both binaries.
+func (r *statusRecorder) Unwrap() http.ResponseWriter {
+	return r.ResponseWriter
+}

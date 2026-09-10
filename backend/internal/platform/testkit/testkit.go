@@ -166,6 +166,7 @@ func Redis(t *testing.T) *redis.Client {
 // new one must add it here too, or its rows leak between tests.
 var truncatedSchemas = []string{
 	"identity", "catalog", "media", "commerce", "home", "library", "kids", "jobs",
+	"ingest", "pm",
 }
 
 // TruncateAll empties every application table, leaving the schema in

@@ -6,6 +6,7 @@
 *.env.local
 backend/.env
 web/.env.local
+pm-web/.env.local
 
 # ── مواد داخلی ───────────────────────────────────────────────────────────
 # مخزن عمومی است. اینها بیرون می‌مانند: پیچ‌دک، سند طراحی ورد، عکس‌های
@@ -22,12 +23,17 @@ node_modules/
 web/.next/
 web/out/
 web/next-env.d.ts
+pm-web/.next/
+pm-web/out/
+pm-web/next-env.d.ts
+*.tsbuildinfo
 
 # باینری‌های Go
 backend/bin/
 backend/api
 backend/worker
 backend/scheduler
+backend/pmapi
 
 # ...ولی `backend/api` بدون اسلش، پوشه را هم می‌گیرد — و `backend/api/`
 # جای openapi.yaml است که سند ۰۷ آن را «تنها منبع حقیقت» می‌نامد و هر سه
