@@ -1,0 +1,57 @@
+name: ketapod-preview
+
+# فقط وب، بدون بک‌اند.
+#
+# `docker-compose.yml` کل استک را بالا می‌آورد: Postgres و Redis و MinIO و
+# سه باینری Go. برای دیدن سایت هیچ‌کدام لازم نیست — و هر کدام یک چیز
+# اضافه است که می‌تواند روی سرور بشکند (بیلد Go به GOPROXY نیاز دارد،
+# minio و postgres به pull از Docker Hub).
+#
+# این فایل یک کانتینر بالا می‌آورد، چون سایت روی پای خودش می‌ایستد:
+#
+#   • کاتالوگ از `web/src/lib/catalog/data.ts` می‌آید، نه از API.
+#   • پنل کاربر به مسیرهای `/api/v1/*` خودِ Next می‌خورد (mock).
+#   • بخش‌های داینامیک صفحه اول اگر API نباشد به مقدار seed برمی‌گردند —
+#     `lib/api.ts` این را تضمین می‌کند و هیچ بخشی صفحه را نمی‌اندازد.
+#
+# اجرا:
+#   cp .env.example .env    # و PREVIEW_PASSWORD را پر کن
+#   docker compose -f docker-compose.preview.yml up -d --build
+#
+# به‌روزرسانی بعد از هر push:
+#   git pull && docker compose -f docker-compose.preview.yml up -d --build
+
+services:
+  web:
+    build:
+      context: ./web
+      args:
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org}
+        # مرورگر این را صدا می‌زند، پس باید از بیرون قابل دسترس باشد.
+        # وقتی بک‌اند Go بالا نیست، آدرس خود سایت درست‌ترین مقدار است: درخواست
+        # سریع ۴۰۴ می‌گیرد و بخش به داده seed برمی‌گردد. اگر اینجا آدرسی
+        # بگذاری که resolve نمی‌شود، همان fallback اتفاق می‌افتد ولی بعد از
+        # مهلت انتظار DNS، و صفحه اول کند بالا می‌آید.
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8080}
+        NEXT_PUBLIC_ANALYTICS_ENABLED: "false"
+
+    # بدون این رمز، سایت روی IP عمومی یعنی هر کسی با هر شماره‌ای وارد
+    # می‌شود — کد تأیید در همین بیلد روی صفحه چاپ می‌شود. جزئیات در
+    # `web/src/proxy.ts`.
+    environment:
+      PREVIEW_USER: ${PREVIEW_USER:-ketapod}
+      PREVIEW_PASSWORD: ${PREVIEW_PASSWORD:?رمز پیش‌نمایش لازم است — در .env مقدار بده}
+
+    ports:
+      - "${WEB_PORT:-8080}:3000"
+    restart: unless-stopped
+
+    healthcheck:
+      # ۴۰۱ یعنی سرور بالاست و دروازه هم کار می‌کند؛ هر دو را با هم چک
+      # می‌کند. `--spider` خروجی را دور می‌ریزد و فقط کد وضعیت می‌ماند.
+      test:
+        ["CMD-SHELL", "wget -q --spider --server-response http://localhost:3000/ 2>&1 | grep -q '401\\|200'"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

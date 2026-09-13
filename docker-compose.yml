@@ -177,6 +177,11 @@ services:
         NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8080}
         NEXT_PUBLIC_ANALYTICS_ENABLED: ${NEXT_PUBLIC_ANALYTICS_ENABLED:-false}
     profiles: ["app"]
+    # رمز پیش‌نمایش build-arg نیست: داخل ایمیج نمی‌نشیند و عوض‌کردنش فقط
+    # restart می‌خواهد نه build دوباره. خالی یعنی دروازه خاموش.
+    environment:
+      PREVIEW_USER: ${PREVIEW_USER:-ketapod}
+      PREVIEW_PASSWORD: ${PREVIEW_PASSWORD:-}
     ports:
       - "${WEB_PORT:-3000}:3000"
     depends_on:
