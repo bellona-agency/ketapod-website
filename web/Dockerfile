@@ -35,8 +35,15 @@ COPY . .
 # which is why it is a build argument rather than only an environment
 # variable on the running container.
 ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
+# The account screens have their own client (`lib/platform.ts`) and read this
+# variable, not the one above. Nothing set it until now, so it fell through to
+# the empty string and the panel always hit the in-process mock handlers — no
+# matter where API_BASE_URL pointed. Empty is still the default, but it is now
+# a default that was chosen and can be overridden.
+ARG NEXT_PUBLIC_PLATFORM_BASE_URL=
 ARG NEXT_PUBLIC_ANALYTICS_ENABLED=false
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL \
+    NEXT_PUBLIC_PLATFORM_BASE_URL=$NEXT_PUBLIC_PLATFORM_BASE_URL \
     NEXT_PUBLIC_ANALYTICS_ENABLED=$NEXT_PUBLIC_ANALYTICS_ENABLED \
     NEXT_TELEMETRY_DISABLED=1
 

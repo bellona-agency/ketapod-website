@@ -1,0 +1,40 @@
+# پروکسی جلوی سایت.
+#
+# دو کار می‌کند و هر دو لازم‌اند:
+#
+# ۱. یک درگاه، نه چند پورت. سایت و — بعداً — API از یک آدرس سرو می‌شوند،
+#    پس مرورگر همه‌چیز را same-origin می‌بیند و CORS از میان برمی‌دارد.
+#    اگر API روی پورت جدا می‌رفت، کوکی نشست باید cross-site می‌شد و
+#    `SameSite=None; Secure` می‌خواست — که روی HTTP اصلاً کار نمی‌کند.
+#
+# ۲. basic auth. این بیلد کد OTP را در پاسخ API برمی‌گرداند
+#    (`web/src/app/api/v1/auth/otp/request/route.ts` → `code`)، چون
+#    درگاه پیامک هنوز وصل نیست. روی یک IP عمومی این یعنی هر کسی با هر
+#    شماره‌ای وارد هر حسابی می‌شود. تا وقتی کاوه‌نگار وصل نشده، این لایه
+#    تنها چیزی است که جلوی آن را می‌گیرد — برندارید.
+
+:8080 {
+	# لاگ به stdout تا `docker compose logs` ببیندش.
+	log {
+		output stdout
+		format console
+	}
+
+	basicauth {
+		# هش با: docker run --rm caddy caddy hash-password --plaintext 'YOURPASS'
+		# مقدار پایین placeholder است و باید عوض شود؛ deploy.sh اگر
+		# دست‌نخورده بماند خطا می‌دهد.
+		{$SITE_USER:ketapod} {$SITE_PASSWORD_HASH}
+	}
+
+	# وقتی بک‌اند Go بالا آمد، این بلوک را از کامنت دربیاورید. چون از همین
+	# مبدأ سرو می‌شود، `NEXT_PUBLIC_API_BASE_URL` باید خالی بماند نه اینکه
+	# به یک هاست دیگر اشاره کند.
+	# handle /api/* {
+	# 	reverse_proxy api:8080
+	# }
+
+	handle {
+		reverse_proxy web:3000
+	}
+}

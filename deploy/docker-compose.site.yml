@@ -1,0 +1,61 @@
+name: ketapod-site
+
+# فقط سایت. عمداً از `docker-compose.yml` ریشه جداست.
+#
+# مهم‌ترین ویژگی این فایل چیزی است که *ندارد*: هیچ سرویسی پورت ۳۰۰۰ میزبان
+# را نمی‌گیرد. کانتینر وب داخلاً روی ۳۰۰۰ گوش می‌دهد ولی publish نمی‌شود —
+# تنها چیزی که به میزبان bind می‌شود، Caddy روی ${SITE_PORT} است. پس حتی
+# اگر این استک بد بالا بیاید یا دوبار اجرا شود، Gitea روی ۳۰۰۰ دست‌نخورده
+# می‌ماند. compose ریشه این تضمین را ندارد: آنجا `${WEB_PORT:-3000}:3000`
+# است و پیش‌فرضش دقیقاً روی Gitea می‌نشیند.
+#
+# بک‌اند Go اینجا نیست. سایت فعلاً روی هندلرهای mock داخل Next.js می‌چرخد،
+# و آوردن postgres/redis/minio به این استک یعنی چهار چیز دیگر که می‌توانند
+# در اولین دیپلوی خراب شوند. وقتی API آماده شد، از compose ریشه بالا
+# می‌آید و بلوک `handle /api/*` در Caddyfile باز می‌شود.
+
+services:
+  web:
+    build:
+      context: ../web
+      args:
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org}
+        # خالی یعنی «همین مبدأ». سایت به mock داخل خودش می‌زند؛ به محض
+        # اینکه Caddy مسیر /api را به Go بدهد، همین مقدار خالی درست
+        # می‌ماند و نیازی به rebuild نیست.
+        NEXT_PUBLIC_API_BASE_URL: ""
+        NEXT_PUBLIC_PLATFORM_BASE_URL: ""
+        NEXT_PUBLIC_ANALYTICS_ENABLED: "false"
+    restart: unless-stopped
+    # بدون ports. عمدی — بالا توضیح داده شد.
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/ >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      # به‌جای `8080:8080` می‌شد `127.0.0.1:8080` نوشت و پشت nginx موجود
+      # برد؛ ولی روی این سرور nginx‌ای نیست (۸۰ و ۴۴۳ هر دو بسته‌اند)، پس
+      # مستقیم روی اینترفیس عمومی. basic auth در Caddyfile جبرانش می‌کند.
+      - "${SITE_PORT:-8080}:8080"
+    environment:
+      SITE_USER: ${SITE_USER:-ketapod}
+      SITE_PASSWORD_HASH: ${SITE_PASSWORD_HASH:?SITE_PASSWORD_HASH لازم است — deploy/README.md را ببینید}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+
+volumes:
+  caddy_data:
+  caddy_config:
