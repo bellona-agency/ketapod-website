@@ -34,7 +34,12 @@ $ErrorActionPreference = 'Stop'
 $repo    = Split-Path -Parent $PSScriptRoot
 $web     = Join-Path $repo 'web'
 $staging = Join-Path $env:TEMP 'ketapod-pkg'
-$tarball = Join-Path $env:TEMP 'ketapod-site.tar.gz'
+# داخل مخزن و نه در TEMP: پکیج چیزی است که ممکن است لازم شود دستی
+# جابه‌جا شود، به همکار داده شود، یا هفته بعد دوباره پیدا شود — و
+# %TEMP% هم جای پیدا کردنش نیست هم ویندوز هر وقت خواست پاکش می‌کند.
+# dist/ در .gitignore است.
+$distDir = Join-Path $repo 'dist'
+$tarball = Join-Path $distDir 'ketapod-site.tar.gz'
 $NODE_VER = 'v22.11.0'
 
 function Say  ($m) { Write-Host "`n> $m" -ForegroundColor Cyan }
@@ -115,6 +120,7 @@ if ($IncludeNode) {
 }
 
 Say 'فشرده‌سازی'
+New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 if (Test-Path $tarball) { Remove-Item $tarball -Force }
 Push-Location $staging
 try {

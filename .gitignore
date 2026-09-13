@@ -43,3 +43,6 @@ backend/scheduler
 
 # رمز basic auth دیپلوی
 deploy/.env
+
+# پکیج دیپلوی — بیلد است، نه کد
+dist/
