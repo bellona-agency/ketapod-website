@@ -1,0 +1,51 @@
+[Unit]
+Description=Ketapod website (Next.js standalone)
+Documentation=http://87.248.153.208:3000/Admin/ketapod-website
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ketapod
+Group=ketapod
+WorkingDirectory=__DIR__
+
+# رمز و پورت از اینجا می‌آیند، نه از خود یونیت. یونیت را هر کاربری با
+# `systemctl cat` می‌خواند؛ این فایل 600 و مال root است.
+EnvironmentFile=__ENV__
+ExecStart=__NODE__ server.js
+
+Restart=always
+RestartSec=3
+# اگر پنج بار در ۶۰ ثانیه بمیرد، دست نگه می‌دارد. بدون این، یک خطای
+# پیکربندی به یک حلقه‌ی بی‌پایان ری‌استارت تبدیل می‌شود که لاگ را پر
+# می‌کند و مشکل اصلی را قایم.
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+# ── محدودسازی ─────────────────────────────────────────────────────────────
+# سرویسی که فقط باید یک پورت را سرو کند لازم نیست به بقیه سیستم برسد. اگر
+# روزی از طریق این پروسه چیزی اجرا شد، اینها فاصله‌اش را تا Gitea و بقیه
+# سرور زیاد می‌کنند.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=false
+# نکست در .next کش می‌نویسد، پس ProtectSystem=strict به یک استثنا نیاز
+# دارد — وگرنه سرویس با EROFS بالا نمی‌آید.
+ReadWritePaths=__DIR__/.next
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ketapod-site
+
+[Install]
+WantedBy=multi-user.target

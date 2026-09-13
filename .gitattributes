@@ -1,0 +1,13 @@
+# اسکریپت‌هایی که روی لینوکس اجرا می‌شوند باید LF بمانند، حتی وقتی مخزن
+# روی ویندوز کلون می‌شود. یک install.sh با CRLF با پیغام
+# «bad interpreter: /usr/bin/env bash^M» می‌میرد که هیچ سرنخی نمی‌دهد.
+*.sh            text eol=lf
+*.service       text eol=lf
+Dockerfile      text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+deploy/Caddyfile text eol=lf
+
+# PowerShell برعکس: نسخه ۵.۱ ویندوز فایل UTF-8 بدون BOM را ANSI می‌خواند و
+# متن فارسی داخلش خراب می‌شود. BOM باید حفظ شود، پس دست نزن.
+*.ps1           -text
