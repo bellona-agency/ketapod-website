@@ -26,10 +26,13 @@ param(
     [string]$SiteUser = 'ketapod',
     [string]$Password,
     # این ماشین `id_ed25519` ندارد و `~/.ssh/config` هم ندارد، پس `ssh`
-    # خالی هیچ‌وقت کلید ketapod_gitea را پیشنهاد نمی‌دهد و با
-    # «Permission denied (publickey)» رد می‌شود حتی اگر کلید روی سرور
-    # باشد. صریح پاسش می‌دهیم.
-    [string]$KeyFile = "$env:USERPROFILE\.ssh\ketapod_gitea",
+    # خالی هیچ کلیدی پیشنهاد نمی‌دهد و با «Permission denied (publickey)»
+    # رد می‌شود حتی اگر کلید روی سرور نصب شده باشد. صریح پاسشان می‌دهیم.
+    #
+    # چند کلید و نه یکی: چون معلوم نیست کدام‌یک روی سرور نشسته، ssh همه را
+    # به ترتیب پیشنهاد می‌دهد و اولی که سرور بشناسد کار می‌کند. خالی
+    # گذاشتنِ این پارامتر یعنی «هر چه در ~/.ssh هست».
+    [string[]]$KeyFile = @(),
     [switch]$IncludeNode,
     [switch]$PackageOnly,
     [switch]$SkipBuild
@@ -150,14 +153,29 @@ if ($PackageOnly) {
 }
 
 # ── ارسال ─────────────────────────────────────────────────────────────────
-# اگر کلید هست صریح بدهش؛ اگر نیست بگذار ssh خودش هرچه دارد پیشنهاد کند
-# (ممکن است agent یا کلید پیش‌فرض داشته باشد).
-$sshOpts = @('-o','StrictHostKeyChecking=accept-new')
-if (Test-Path $KeyFile) {
-    $sshOpts += @('-i', $KeyFile, '-o', 'IdentitiesOnly=yes')
-    Ok "کلید: $KeyFile"
+$keys = @()
+if ($KeyFile.Count -gt 0) {
+    $keys = $KeyFile | Where-Object { Test-Path $_ }
 } else {
-    Write-Host "  [!] $KeyFile نیست — از کلیدهای پیش‌فرض ssh استفاده می‌شود" -ForegroundColor Yellow
+    # هر کلید خصوصی در ~/.ssh — یعنی هر فایلی که یک .pub همنام دارد.
+    $sshDir = Join-Path $env:USERPROFILE '.ssh'
+    if (Test-Path $sshDir) {
+        $keys = Get-ChildItem $sshDir -File |
+            Where-Object { $_.Extension -ne '.pub' -and (Test-Path "$($_.FullName).pub") } |
+            ForEach-Object { $_.FullName }
+    }
+}
+
+$sshOpts = @('-o','StrictHostKeyChecking=accept-new')
+if ($keys.Count -gt 0) {
+    foreach ($k in $keys) { $sshOpts += @('-i', $k) }
+    # IdentitiesOnly تا ssh فقط همین‌ها را امتحان کند. بدون آن، اگر agent
+    # پر باشد ممکن است قبل از رسیدن به کلید درست به سقف MaxAuthTries
+    # بخورد و سرور قطع کند — که شبیه «کلید غلط است» به نظر می‌رسد.
+    $sshOpts += @('-o','IdentitiesOnly=yes')
+    Ok ("کلیدها: " + (($keys | Split-Path -Leaf) -join ', '))
+} else {
+    Write-Host "  [!] هیچ کلیدی در ~/.ssh نیست" -ForegroundColor Yellow
 }
 
 Say "اتصال به ${User}@${ServerHost}:${SshPort}"
@@ -166,27 +184,38 @@ Say "اتصال به ${User}@${ServerHost}:${SshPort}"
 # می‌شود و پیام راهنما را زیر نویز دفن می‌کند.
 & ssh -p $SshPort @sshOpts -o ConnectTimeout=15 "${User}@${ServerHost}" 'echo ok' 2>$null | Out-Null
 if ($LASTEXITCODE -ne 0) {
-    $pub = "$KeyFile.pub"
-    $pubTxt = if (Test-Path $pub) { (Get-Content $pub -Raw).Trim() } else { '(کلید عمومی پیدا نشد)' }
+    # همه کلیدهایی که امتحان شدند را نشان بده — هرکدام روی سرور نصب شود
+    # کافی است، و کاربر باید بداند کدام‌ها را از قبل رد کرده.
+    $lines = @()
+    foreach ($k in $keys) {
+        if (Test-Path "$k.pub") { $lines += (Get-Content "$k.pub" -Raw).Trim() }
+    }
+    # فقط *یکی* در دستور کپی‌کردنی. سه کلید در یک echo یعنی یک
+    # authorized_keys خراب. کوتاه‌ترین را می‌گذاریم چون احتمال شکستن خط
+    # موقع کپی از همه کمتر است (ed25519 یک خط کوتاه است، rsa چهار برابرش).
+    $pick = $keys | Sort-Object { (Get-Content "$_.pub" -Raw).Trim().Length } | Select-Object -First 1
+    $shortest = if ($pick) { (Get-Content "$pick.pub" -Raw).Trim() } else { '' }
+    $fp = if ($pick) { (& ssh-keygen -lf "$pick.pub" 2>$null) -join '' } else { '' }
+    $pubTxt = if ($lines.Count -gt 0) { $lines -join "`n" } else { '(کلید عمومی پیدا نشد)' }
     Fail @"
-اتصال SSH برقرار نشد — سرور کلید را نمی‌شناسد.
-
-این سرور فقط publickey قبول می‌کند؛ رمز root کار نمی‌کند. پس کلید زیر
-باید یک بار روی سرور نصب شود:
+اتصال SSH برقرار نشد — سرور هیچ‌کدام از این کلیدها را نمی‌شناسد:
 
 $pubTxt
 
-راه‌ها، به ترتیب احتمال:
+این سرور فقط publickey قبول می‌کند؛ رمز root کار نمی‌کند. کافی است
+*یکی* از کلیدهای بالا روی سرور نصب شود. در کنسول سرور:
 
-۱) کنسول وب پنل هاست (هدآوب). وارد کنسول شوید و این را بزنید:
+    mkdir -p /root/.ssh && chmod 700 /root/.ssh
+    printf '%s\n' '$shortest' >> /root/.ssh/authorized_keys
+    chmod 600 /root/.ssh/authorized_keys && chown -R root:root /root/.ssh
+    restorecon -R /root/.ssh 2>/dev/null   # فقط CentOS/Rocky
 
-     mkdir -p /root/.ssh && chmod 700 /root/.ssh
-     echo '$pubTxt' >> /root/.ssh/authorized_keys
-     chmod 600 /root/.ssh/authorized_keys
+بعد همان‌جا تأیید کنید که واقعاً نشسته:
 
-۲) اگر پنل بخش «SSH Keys» دارد، همان متن بالا را آنجا اضافه کنید.
+    ssh-keygen -lf /root/.ssh/authorized_keys
 
-۳) اگر از جای دیگری به سرور دسترسی دارید، همان دستور بند ۱.
+اگر در خروجی این فینگرپرینت بود، درست نشسته:
+    $fp
 
 بعدش دوباره همین اسکریپت را اجرا کنید.
 "@
