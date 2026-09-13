@@ -25,12 +25,26 @@ param(
     [int]$Port     = 8080,
     [string]$SiteUser = 'ketapod',
     [string]$Password,
+    # این ماشین `id_ed25519` ندارد و `~/.ssh/config` هم ندارد، پس `ssh`
+    # خالی هیچ‌وقت کلید ketapod_gitea را پیشنهاد نمی‌دهد و با
+    # «Permission denied (publickey)» رد می‌شود حتی اگر کلید روی سرور
+    # باشد. صریح پاسش می‌دهیم.
+    [string]$KeyFile = "$env:USERPROFILE\.ssh\ketapod_gitea",
     [switch]$IncludeNode,
     [switch]$PackageOnly,
     [switch]$SkipBuild
 )
 
-$ErrorActionPreference = 'Stop'
+# عمداً 'Continue' و نه 'Stop'.
+#
+# در PowerShell 5.1 هر خطی که یک exe بومی روی stderr بنویسد به ErrorRecord
+# تبدیل می‌شود، و با EAP=Stop همان‌جا کل اسکریپت را می‌کشد — قبل از اینکه
+# `if ($LASTEXITCODE -ne 0)` بعدی اجرا شود. نتیجه‌اش این بود که ssh با
+# «Permission denied» می‌مرد و پیام راهنمای این اسکریپت هیچ‌وقت چاپ نمی‌شد؛
+# کاربر یک stack trace می‌دید به‌جای اینکه بفهمد باید کلید را نصب کند.
+#
+# پس خطاها را خودمان با $LASTEXITCODE می‌گیریم — که در تمام مسیر انجام شده.
+$ErrorActionPreference = 'Continue'
 $repo    = Split-Path -Parent $PSScriptRoot
 $web     = Join-Path $repo 'web'
 $staging = Join-Path $env:TEMP 'ketapod-pkg'
@@ -136,24 +150,51 @@ if ($PackageOnly) {
 }
 
 # ── ارسال ─────────────────────────────────────────────────────────────────
+# اگر کلید هست صریح بدهش؛ اگر نیست بگذار ssh خودش هرچه دارد پیشنهاد کند
+# (ممکن است agent یا کلید پیش‌فرض داشته باشد).
+$sshOpts = @('-o','StrictHostKeyChecking=accept-new')
+if (Test-Path $KeyFile) {
+    $sshOpts += @('-i', $KeyFile, '-o', 'IdentitiesOnly=yes')
+    Ok "کلید: $KeyFile"
+} else {
+    Write-Host "  [!] $KeyFile نیست — از کلیدهای پیش‌فرض ssh استفاده می‌شود" -ForegroundColor Yellow
+}
+
 Say "اتصال به ${User}@${ServerHost}:${SshPort}"
-& ssh -p $SshPort -o ConnectTimeout=15 -o StrictHostKeyChecking=accept-new "${User}@${ServerHost}" 'echo ok' | Out-Null
+# stderr به null: این فقط یک آزمایش است و شکستش را خودمان با پیام مفصل
+# پایین گزارش می‌کنیم. بدون این، «Permission denied» خام ssh هم چاپ
+# می‌شود و پیام راهنما را زیر نویز دفن می‌کند.
+& ssh -p $SshPort @sshOpts -o ConnectTimeout=15 "${User}@${ServerHost}" 'echo ok' 2>$null | Out-Null
 if ($LASTEXITCODE -ne 0) {
+    $pub = "$KeyFile.pub"
+    $pubTxt = if (Test-Path $pub) { (Get-Content $pub -Raw).Trim() } else { '(کلید عمومی پیدا نشد)' }
     Fail @"
-اتصال SSH برقرار نشد.
+اتصال SSH برقرار نشد — سرور کلید را نمی‌شناسد.
 
-اگر رمز root دارید ولی کلید ندارید، اول کلید بسازید و بفرستید:
-    ssh-keygen -t ed25519 -C ketapod -f `$env:USERPROFILE\.ssh\id_ed25519
-    type `$env:USERPROFILE\.ssh\id_ed25519.pub | ssh -p $SshPort $User@$ServerHost "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
+این سرور فقط publickey قبول می‌کند؛ رمز root کار نمی‌کند. پس کلید زیر
+باید یک بار روی سرور نصب شود:
 
-اگر سرور فقط publickey قبول می‌کند (که این یکی می‌کند) و کلیدی ندارید،
-از پنل هاست کلید عمومی را اضافه کنید یا از کنسول وب پنل استفاده کنید.
+$pubTxt
+
+راه‌ها، به ترتیب احتمال:
+
+۱) کنسول وب پنل هاست (هدآوب). وارد کنسول شوید و این را بزنید:
+
+     mkdir -p /root/.ssh && chmod 700 /root/.ssh
+     echo '$pubTxt' >> /root/.ssh/authorized_keys
+     chmod 600 /root/.ssh/authorized_keys
+
+۲) اگر پنل بخش «SSH Keys» دارد، همان متن بالا را آنجا اضافه کنید.
+
+۳) اگر از جای دیگری به سرور دسترسی دارید، همان دستور بند ۱.
+
+بعدش دوباره همین اسکریپت را اجرا کنید.
 "@
 }
 Ok 'اتصال برقرار است'
 
 Say 'آپلود'
-& scp -P $SshPort -o StrictHostKeyChecking=accept-new $tarball "${User}@${ServerHost}:/tmp/ketapod-site.tar.gz"
+& scp -P $SshPort @sshOpts $tarball "${User}@${ServerHost}:/tmp/ketapod-site.tar.gz"
 if ($LASTEXITCODE -ne 0) { Fail 'آپلود شکست خورد.' }
 Ok 'آپلود شد'
 
@@ -162,7 +203,7 @@ $envs = "PORT=$Port SITE_USER='$SiteUser'"
 if ($Password) { $envs = "$envs SITE_PASSWORD='$Password'" }
 $remote = "set -e; rm -rf /tmp/ketapod-pkg; mkdir -p /tmp/ketapod-pkg; tar -xzf /tmp/ketapod-site.tar.gz -C /tmp/ketapod-pkg; cd /tmp/ketapod-pkg; $envs bash install.sh"
 
-& ssh -p $SshPort -o StrictHostKeyChecking=accept-new "${User}@${ServerHost}" $remote
+& ssh -p $SshPort @sshOpts "${User}@${ServerHost}" $remote
 if ($LASTEXITCODE -ne 0) { Fail 'نصب شکست خورد. خروجی بالا را ببینید.' }
 
 Write-Host "`n  http://${ServerHost}:${Port}`n" -ForegroundColor Green
