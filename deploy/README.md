@@ -29,6 +29,24 @@ dist\ketapod-site.tar.gz        (~۷ مگابایت)
 .\deploy\package-and-ship.ps1 -SkipBuild               # بیلد قبلی را بفرست
 ```
 
+## بدون SSH — از روی Gitea خود سرور
+
+اگر SSH در دسترس نیست ولی به کنسول سرور دسترسی دارید، پکیج به‌عنوان
+release asset روی Gitea همان سرور آپلود شده. چون Gitea روی خود سرور
+است، دانلودش نه به اینترنت نیاز دارد نه به آپلود:
+
+```bash
+curl -u Admin -L -o /tmp/ketapod-site.tar.gz \
+  http://localhost:3000/attachments/92694c27-42ee-4c15-b91d-12b08965c5de
+mkdir -p /tmp/ketapod && tar -xzf /tmp/ketapod-site.tar.gz -C /tmp/ketapod
+cd /tmp/ketapod && PORT=8080 bash install.sh
+```
+
+`curl -u Admin` رمز را تعاملی می‌پرسد، پس در history شل نمی‌ماند.
+
+برای انتشار نسخه جدید، پکیج تازه را با همان API آپلود کنید (یا release
+را جایگزین کنید) و همین سه خط را دوباره بزنید.
+
 ## اگر SSH وصل نشد
 
 سرور فقط `publickey` قبول می‌کند — رمز کار نمی‌کند
