@@ -1,0 +1,41 @@
+[Unit]
+Description=Ketapod pm tool — API (pmapi)
+Documentation=http://87.248.153.208:3000/Admin/ketapod-website
+After=network-online.target postgresql.service redis-server.service ketapod-minio.service
+Wants=network-online.target
+Requires=ketapod-minio.service
+
+[Service]
+Type=simple
+User=ketapod-pm
+Group=ketapod-pm
+WorkingDirectory=__DIR__
+
+# متغیرها اینجا می‌مانند، نه در یونیت — یونیت را هر کاربری با
+# `systemctl cat` می‌خواند؛ این فایل 600 و مال root است.
+EnvironmentFile=__ENV__
+ExecStart=__DIR__/pmapi
+
+Restart=always
+RestartSec=3
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+LockPersonality=true
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ketapod-pmapi
+
+[Install]
+WantedBy=multi-user.target
